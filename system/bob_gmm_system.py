@@ -4,6 +4,11 @@ import logging
 from frontend import  frontend
 import config, os
 import bob
+from sklearn import metrics
+import numpy as np
+import matplotlib.pyplot as plt
+import pickle
+
 
 class BobGmmSystem():
 
@@ -38,10 +43,8 @@ class BobGmmSystem():
         """
         ubm = self.model.ubm
         likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - ubm.log_likelihood(features)
-        if likelihood_ratio >  0:
-            return True
 
-        return False
+        return likelihood_ratio
 
 if __name__ == '__main__':
 
@@ -51,7 +54,7 @@ if __name__ == '__main__':
 
     total = sum([len(trials) for _, trials in manager.speaker_trials.iteritems()])
 
-    system = BobGmmSystem()
+    system = BobGmmSystem(num_gaussians=128)
     print "training background"
     system.train_background(manager.get_background_data())
     print "training speaker models"
@@ -59,14 +62,31 @@ if __name__ == '__main__':
 
     numCorrect = 0
     numTrues = 0
+
+    answer_array = []
+    likelihood_array = []
     for speaker_id, trials in manager.speaker_trials.iteritems():
         for trial in trials:
-            guess = system.verify(trial.claimed_speaker, trial.data())
-            if guess is True:
-                numTrues+=1
-            if trial.answer == guess:
-                numCorrect += 1
-    print numTrues
-    print numCorrect
-    print total
-    print float(numCorrect) / total
+            answer_array.append(trial.answer)
+            likelihood_array.append(system.verify(trial.claimed_speaker, trial.data()))
+
+    #save results
+    np.save('scores.npy', likelihood_array)
+    np.save('answers.npy', answer_array)
+    with open('system.pickle', 'wb') as fp:
+        pickle.dump(system, fp, pickle.HIGHEST_PROTOCOL)
+
+    """
+    false_positive_rate, true_positive_rate, thresholds = metrics.roc_curve(answer_array, likelihood_array)
+    roc_auc = metrics.auc(false_positive_rate, true_positive_rate)
+    plt.title('Receiver Operating Characteristic')
+    plt.plot(false_positive_rate, true_positive_rate, 'b',
+    label='AUC = %0.2f'% roc_auc)
+    plt.legend(loc='lower right')
+    plt.plot([0,1],[0,1],'r--')
+    plt.xlim([-0.1,1.2])
+    plt.ylim([-0.1,1.2])
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
+    plt.show()
+    """
