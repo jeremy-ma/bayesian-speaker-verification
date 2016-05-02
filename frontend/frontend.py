@@ -9,7 +9,7 @@ from bob.bio.spear.extractor import Cepstral
 from scipy.io import wavfile
 from collections import defaultdict
 
-def process_all_and_save(data_directory, dest_directory, test_id='test'):
+def process_all_and_save(data_directory, dest_directory):
     """
     Preprocess all media files, perform voice activity detection and MFCC
     feature extraction. Save files to dest_directory. Expects .pcm files.
@@ -54,34 +54,110 @@ def process_all_and_save(data_directory, dest_directory, test_id='test'):
                 #save
                 np.save(newsavefile, normalised_features)
 
+class Trial():
 
-def parse_trials(enrol_file, trial_file):
+    def __init__(self, filepath, claimed_speaker, actual_speaker):
+        self.filepath = filepath
+        self.claimed_speaker = claimed_speaker
+        self.actual_speaker = actual_speaker
+        self.answer = (self.claimed_speaker == self.actual_speaker)
 
-    speaker_enrol_files = {}
-    with open(enrol_file) as enrol_fp:
-        for entry in enrol_fp:
-            entry = entry.rstrip()
-            parts = entry.split(' ')
-            speaker_id = parts[0]
-            filelist = parts[1].split(',')
-            filelist = [relative_filepath + '.npy' for relative_filepath in filelist]
-            speaker_enrol_files[speaker_id] = filelist
+    def data(self):
+        return np.load(self.filepath)
 
-    speaker_trial_files = defaultdict(set)
-    with open(trial_file) as trial_fp:
-        for entry in trial_fp:
-            entry = entry.rstrip()
-            parts = entry.split(',')
-            speaker_id = parts[0].split('_')[0]
-            relative_filepath = parts[1] + '.npy'
-            speaker_trial_files[speaker_id].add(relative_filepath)
+class DataManager():
 
-    return (speaker_enrol_files, speaker_trial_files)
+    def __init__(self, data_directory, enrol_file, trial_file):
+        self.data_directory = data_directory
+        self.speaker_enrolment_files = self.parse_enrol(enrol_file)
+        self.speaker_trials = self.parse_trials(trial_file)
+
+    def parse_enrol(self, enrol_file):
+        """
+        parse enrolment file
+        :param enrol_file:
+        :return:
+        """
+        speaker_enrol_files = {}
+        with open(enrol_file) as enrol_fp:
+            for entry in enrol_fp:
+                entry = entry.rstrip()
+                parts = entry.split(' ')
+                speaker_id = parts[0]
+                filelist = parts[1].split(',')
+                # get list of file names
+                filelist = [os.path.join(self.data_directory, relative_filepath + '.npy') for relative_filepath in filelist]
+                # tag with
+                speaker_enrol_files[speaker_id] = filelist
+
+        return speaker_enrol_files
+
+    def parse_trials(self, trial_file):
+        """
+        parse trial file
+        :param trial_file:
+        :return:
+        """
+
+        speaker_trial_temp = defaultdict(set)
+        with open(trial_file) as trial_fp:
+            for entry in trial_fp:
+                entry = entry.rstrip()
+                parts = entry.split(',')
+                speaker_id = parts[0].split('_')[0]
+                relative_filepath = parts[1] + '.npy'
+                # want to get rid of duplicate trials
+                claimed_speaker = relative_filepath.split('/')[0]
+                speaker_trial_temp[speaker_id].add((os.path.join(self.data_directory, relative_filepath),claimed_speaker))
+
+        speaker_trial_files = defaultdict(list)
+        for speaker_id, files in speaker_trial_temp.iteritems():
+            for filepath, actual_speaker in files:
+                trial = Trial(filepath=os.path.join(self.data_directory, filepath), claimed_speaker=speaker_id,
+                              actual_speaker=actual_speaker)
+                speaker_trial_files[speaker_id].append(trial)
+
+        return speaker_trial_files
+
+    def get_features(self, filelist):
+        """
+        helper function
+        :param filelist:
+        :return:
+        """
+        feature_list = []
+        for fname in filelist:
+            arr = np.load(os.path.join(self.data_directory, fname))
+            feature_list.append(arr)
+        return np.concatenate(feature_list)
+
+    def get_background_data(self):
+        """
+        Get data for training background model
+        :return: 2d array of all enrolment data
+        """
+        array_list = []
+        for speaker, enrol_filelist in self.speaker_enrolment_files.iteritems():
+            array_list.append(self.get_features(enrol_filelist))
+        return np.concatenate(array_list)
+
+    def get_enrolment_data(self):
+        """
+        Get enrolment data
+        :return: dictionary speaker_id->feature array
+        """
+        enrolment_data = {}
+        for speaker_id, filelist in self.speaker_enrolment_files.iteritems():
+            array_list = [np.load(filename) for filename in filelist]
+            enrolment_data[speaker_id] = np.concatenate(array_list)
+
+        return enrolment_data
 
 
 if __name__ == '__main__':
     # process_all_and_save(data_directory=os.path.join(config.reddots_directory,'pcm/'), \
     #            dest_directory=os.path.join(config.reddots_directory,'preprocessed_vad/'))
 
-    speaker_enrol, speaker_trial = parse_trials(enrol_file=config.reddots_part4_enrol_female,
-                                                trial_file=config.reddots_part4_trial_female)
+    #speaker_enrol, speaker_trial = parse_trials(enrol_file=config.reddots_part4_enrol_female,
+    #                                            trial_file=config.reddots_part4_trial_female)
+    pass
