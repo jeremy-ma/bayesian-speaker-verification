@@ -70,7 +70,7 @@ if __name__ == '__main__':
     for speaker_id, trials in manager.speaker_trials.iteritems():
         for trial in trials:
             answer_array.append(trial.answer)
-            likelihood_array.append(system.verify(trial.claimed_speaker, trial.data()))
+            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data()))
 
     #save results
     np.save('scores.npy', likelihood_array)
