@@ -2,11 +2,11 @@ __author__ = 'Varun Nayyar'
 
 import numpy as np
 from scipy.stats import norm
-
 from RobustLikelihoodClass import Likelihood
 from frontend import frontend
 import config
 import os
+import time
 
 def weightProp2(currWeights):
     numMixtures = len(currWeights)
@@ -235,14 +235,21 @@ def MCMCRun(Xpoints, numRuns=10000, numMixtures=4):
 
 
 if __name__ == "__main__":
-    speaker_enrol, speaker_trial = frontend.parse_trials(enrol_file=config.reddots_part4_enrol_female,
-                                                trial_file=config.reddots_part4_trial_female)
-    enrol_data = []
-    for feature_file in speaker_enrol['f0002']:
-        data = np.load(os.path.join(config.reddots_directory, 'preprocessed', feature_file))
-        enrol_data.append(data)
-    speaker_data = np.concatenate(enrol_data)
-    print speaker_data.shape
+    manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
+                               enrol_file=config.reddots_part4_enrol_female,
+                               trial_file=config.reddots_part4_trial_female)
+    speaker_data = manager.get_background_data()
 
-    stuff = MCMCRun(speaker_data, numMixtures=256)
-    import pdb; pdb.set_trace()
+
+    #stuff = MCMCRun(speaker_data, numMixtures=8, numRuns=1000)
+
+
+    for speaker_id, trials in manager.speaker_trials.iteritems():
+        for trial in trials:
+            start = time.time()
+            MCMCRun(trial.data(), numMixtures=8, numRuns=1000)
+            end = time.time()
+            print trial.data().shape
+            print end-start
+
+    #import pdb; pdb.set_trace()
