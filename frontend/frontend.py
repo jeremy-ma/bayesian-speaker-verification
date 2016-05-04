@@ -166,6 +166,7 @@ class DataManager():
             for trial in trial_list:
                 if trial.feature_file not in file_set:
                     unique_trials[trial.actual_speaker].append(trial)
+                    file_set.add(trial.feature_file)
         return unique_trials
 
 if __name__ == '__main__':
