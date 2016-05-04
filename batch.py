@@ -8,7 +8,7 @@ import os
 import time
 
 if __name__ == '__main__':
-    print time.time()
+    start = time.time()
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                    enrol_file=config.reddots_part4_enrol_female,
                                    trial_file=config.reddots_part4_trial_female)
@@ -24,7 +24,6 @@ if __name__ == '__main__':
     pool = multiprocessing.Pool(None)
     map_function = partial(prototype_montecarlo_system.calculate_samples,
                            save_path=save_path, num_iterations=100, num_gaussians=8)
-    r = pool.map(map_function, all_trials)
-    r.wait() # Wait on the results
+    pool.map(map_function, all_trials)
     print "done"
-    print time.time()
+    print time.time() - start
