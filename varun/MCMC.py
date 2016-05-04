@@ -243,13 +243,12 @@ if __name__ == "__main__":
 
     #stuff = MCMCRun(speaker_data, numMixtures=8, numRuns=1000)
 
-
     for speaker_id, trials in manager.speaker_trials.iteritems():
         for trial in trials:
             start = time.time()
-            MCMCRun(trial.data(), numMixtures=8, numRuns=1000)
+            MCMCRun(trial.get_data(), numMixtures=8, numRuns=1000)
             end = time.time()
-            print trial.data().shape
+            print trial.get_data().shape
             print end-start
 
     #import pdb; pdb.set_trace()

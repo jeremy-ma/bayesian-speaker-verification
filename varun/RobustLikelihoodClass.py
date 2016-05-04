@@ -1,6 +1,5 @@
-
-
 import numpy as np
+from sklearn.mixture import GMM as GMMEval
 
 
 class LikelihoodEvaluator():
@@ -26,7 +25,6 @@ class scikitLL(LikelihoodEvaluator):
     def __init__(self, Xpoints, numMixtures):
         print "Scikits Learn Implementation Chosen"
         LikelihoodEvaluator.__init__(self, Xpoints, numMixtures)
-        from sklearn.mixture import GMM as GMMEval
         self.evaluator = GMMEval(n_components=numMixtures)
         self.Xpoints = Xpoints
 
@@ -171,6 +169,8 @@ class GPULL(LikelihoodEvaluator):
         ll = self.gpuarray.sum(self.llVal).get()
         return ll
 
+Likelihood = scikitLL
+"""
 try:
     import pycuda
     Likelihood = GPULL
@@ -178,6 +178,7 @@ except ImportError:
     try:
         from sklearn.mixture import GMM
         Likelihood= scikitLL
+        #Likelihood = SingleCoreLL
     except ImportError:
         Likelihood = SingleCoreLL
 
@@ -196,7 +197,7 @@ def setup():
     print np.sum(sk.evaluator.score(a))
 
     print Sin.loglikelihood(sk.evaluator.means_, sk.evaluator.covars_, sk.evaluator.weights_)
-
+"""
 
 if __name__ == '__main__':
     import timeit

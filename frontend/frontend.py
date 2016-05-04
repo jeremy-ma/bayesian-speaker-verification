@@ -43,7 +43,6 @@ def process_all_and_save(data_directory, dest_directory):
                     print "skipping"
                     continue
 
-
                 # load data into memory
                 data = np.memmap(input_file, dtype='h', mode='r')
                 data = np.array(data, dtype=float)
@@ -56,14 +55,14 @@ def process_all_and_save(data_directory, dest_directory):
 
 class Trial():
 
-    def __init__(self, filepath, claimed_speaker, actual_speaker):
-        self.filepath = filepath
+    def __init__(self, filename, claimed_speaker, actual_speaker):
+        self.feature_file = filename
         self.claimed_speaker = claimed_speaker
         self.actual_speaker = actual_speaker
         self.answer = (self.claimed_speaker == self.actual_speaker)
 
-    def data(self):
-        return np.load(self.filepath)
+    def get_data(self):
+        return np.load(self.feature_file)
 
 class DataManager():
 
@@ -96,7 +95,7 @@ class DataManager():
         """
         parse trial file
         :param trial_file:
-        :return:
+        :return: speaker_trials, dictionary { speaker_id: [trials]}
         """
 
         speaker_trial_temp = defaultdict(set)
@@ -110,14 +109,14 @@ class DataManager():
                 claimed_speaker = relative_filepath.split('/')[0]
                 speaker_trial_temp[speaker_id].add((os.path.join(self.data_directory, relative_filepath),claimed_speaker))
 
-        speaker_trial_files = defaultdict(list)
+        speaker_trials = defaultdict(list)
         for speaker_id, files in speaker_trial_temp.iteritems():
             for filepath, actual_speaker in files:
-                trial = Trial(filepath=os.path.join(self.data_directory, filepath), claimed_speaker=speaker_id,
+                trial = Trial(filename=os.path.join(self.data_directory, filepath), claimed_speaker=speaker_id,
                               actual_speaker=actual_speaker)
-                speaker_trial_files[speaker_id].append(trial)
+                speaker_trials[speaker_id].append(trial)
 
-        return speaker_trial_files
+        return speaker_trials
 
     def get_features(self, filelist):
         """
@@ -153,6 +152,21 @@ class DataManager():
 
         return enrolment_data
 
+    def get_trial_data(self):
+        return self.speaker_trials
+
+    def get_unique_trials(self):
+        """
+        Get unique (by filename) trials
+        :return: unique_trial { actual_speaker_id : [trials including their recording] }
+        """
+        file_set = set()
+        unique_trials = defaultdict(list)
+        for speaker_id, trial_list in self.speaker_trials.iteritems():
+            for trial in trial_list:
+                if trial.feature_file not in file_set:
+                    unique_trials[trial.actual_speaker].append(trial)
+        return unique_trials
 
 if __name__ == '__main__':
     # process_all_and_save(data_directory=os.path.join(config.reddots_directory,'pcm/'), \
