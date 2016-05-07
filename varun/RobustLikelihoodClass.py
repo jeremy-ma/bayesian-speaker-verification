@@ -23,7 +23,7 @@ class scikitLL(LikelihoodEvaluator):
 
 
     def __init__(self, Xpoints, numMixtures):
-        print "Scikits Learn Implementation Chosen"
+        #print "Scikits Learn Implementation Chosen"
         LikelihoodEvaluator.__init__(self, Xpoints, numMixtures)
         self.evaluator = GMMEval(n_components=numMixtures)
         self.Xpoints = Xpoints

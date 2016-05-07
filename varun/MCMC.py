@@ -110,7 +110,6 @@ def MCMCRun(Xpoints, numRuns=10000, numMixtures=4):
     # exit()
     for i in xrange(1, numRuns):
         # proposalMeans = 0.02 * localMean * np.random.normal(size=(numMixtures, LLeval.dim)).astype(np.float32)
-
         if i % 50 == 0:
             print "At Iteration ", i
 
@@ -241,8 +240,8 @@ if __name__ == "__main__":
     speaker_data = manager.get_background_data()
 
 
-    #stuff = MCMCRun(speaker_data, numMixtures=8, numRuns=1000)
-
+    stuff = MCMCRun(speaker_data, numMixtures=256, numRuns=1000)
+    """
     for speaker_id, trials in manager.speaker_trials.iteritems():
         for trial in trials:
             start = time.time()
@@ -250,5 +249,5 @@ if __name__ == "__main__":
             end = time.time()
             print trial.get_data().shape
             print end-start
-
+    """
     #import pdb; pdb.set_trace()
