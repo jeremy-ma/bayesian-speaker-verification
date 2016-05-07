@@ -6,6 +6,9 @@ from frontend import frontend
 import sys, pdb
 import config
 import time
+import numpy as np
+from varun.RobustLikelihoodClass import Likelihood
+from scipy.misc import logsumexp
 
 
 class MonteCarloSystem():
@@ -49,6 +52,47 @@ class MonteCarloSystem():
         for speaker_id, features in speaker_features.iteritems():
             self.model_samples[speaker_id] = self.get_samples(features)
 
+    def load_background(self, filename):
+        with open(filename, 'rb') as fp:
+            self.background_samples = cPickle.load(fp)
+
+    def load_speakers(self, speaker_samples):
+        for speaker_id, filename in speaker_samples.iteritems():
+            with open(filename, 'rb') as fp:
+                self.model_samples[speaker_id] = cPickle.load(fp)
+
+    def verify(self, claimed_speaker, features):
+        claimed_samples = self.model_samples[claimed_speaker]
+        likelihood_calculator = Likelihood(features, self.num_mixtures)
+
+        means, covars, weights = self.model_samples[claimed_speaker]
+        claimed_likelihoods = []
+        for i in xrange(len(means)):
+            claimed_likelihoods.append(likelihood_calculator.loglikelihood(means[i], covars[i], weights[i]))
+
+        means, covars, weights = self.background_samples
+        background_likelihoods = []
+        for i in xrange(len(means)):
+            background_likelihoods.append(likelihood_calculator.loglikelihood(means[i], covars[i], weights[i]))
+
+
+        claimed = logsumexp(np.array(claimed_likelihoods))
+        background = logsumexp(np.array(background_likelihoods))
+        likelihood_ratio = claimed - background
+        return likelihood_ratio
+
+
+def save_enrolment_samples(model_data, save_path, num_iterations, num_gaussians):
+    model_name = model_data['name']
+    model_features = model_data['features']
+    system = MonteCarloSystem(num_gaussians=num_gaussians, num_iterations=num_iterations)
+    samples = system.get_samples(model_features)
+    filename = os.path.join(save_path, 'gaussians' +  str(num_gaussians), 'iterations' + str(num_iterations), model_name + '.npy' )
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
+    with open(filename, 'wb') as fp:
+        cPickle.dump(samples, fp, cPickle.HIGHEST_PROTOCOL)
+
 
 def calculate_samples(trial, save_path, num_iterations, num_gaussians=8):
     print "starting calculation"
@@ -61,10 +105,32 @@ if __name__ == '__main__':
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,
                                trial_file=config.reddots_part4_trial_female)
-    speaker_trials = manager.get_unique_trials()
-    count = 0
-    for speaker_id, trials in speaker_trials.iteritems():
-        print "{0}: {1}".format(speaker_id, len(trials))
-        count += len(trials)
+    speaker_trials = manager.get_trial_data()
 
-    print count
+    system = MonteCarloSystem(num_gaussians=8, num_iterations=10000)
+    system.load_background(os.path.join(config.dropbox_directory, config.computer_id,
+                                        'gaussians8', 'iterations100000', 'background.npy'))
+
+    speaker_data = {}
+    for speaker_id, _ in manager.get_enrolment_data().iteritems():
+        speaker_data[speaker_id] = os.path.join(config.dropbox_directory, config.computer_id,
+                                        'gaussians8', 'iterations100000', speaker_id + '.npy')
+
+    system.load_speakers(speaker_data)
+
+    answer_array = []
+    likelihood_array = []
+    count = 0
+    for speaker_id, trials in manager.speaker_trials.iteritems():
+        for trial in trials:
+            count += 1
+            if count % 50 == 0:
+                print "iteration {0}".format(count)
+            answer_array.append(trial.answer)
+            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data()))
+
+    #save results
+    np.save('scoresMonte.npy', likelihood_array)
+    np.save('answersMonte.npy', answer_array)
+    with open('systemMonte.pickle', 'wb') as fp:
+        cPickle.dump(system, fp, cPickle.HIGHEST_PROTOCOL)
