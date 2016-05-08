@@ -107,14 +107,14 @@ if __name__ == '__main__':
                                trial_file=config.reddots_part4_trial_female)
     speaker_trials = manager.get_trial_data()
 
-    system = MonteCarloSystem(num_gaussians=8, num_iterations=10000)
-    system.load_background(os.path.join(config.dropbox_directory, config.computer_id,
-                                        'gaussians8', 'iterations100000', 'background.npy'))
+    system = MonteCarloSystem(num_gaussians=8, num_iterations=200000)
+    system.load_background(os.path.join(config.dropbox_directory, 'MonteCarloSamples',
+                                        'gaussians8', 'iterations200000', 'background.npy'))
 
     speaker_data = {}
     for speaker_id, _ in manager.get_enrolment_data().iteritems():
-        speaker_data[speaker_id] = os.path.join(config.dropbox_directory, config.computer_id,
-                                        'gaussians8', 'iterations100000', speaker_id + '.npy')
+        speaker_data[speaker_id] = os.path.join(config.dropbox_directory, 'MonteCarloSamples',
+                                        'gaussians8', 'iterations200000', speaker_id + '.npy')
 
     system.load_speakers(speaker_data)
 
@@ -130,7 +130,7 @@ if __name__ == '__main__':
             likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data()))
 
     #save results
-    np.save('scoresMonte.npy', likelihood_array)
-    np.save('answersMonte.npy', answer_array)
+    np.save(os.path.join(config.dropbox_directory, 'scoresMonte200000.npy'), likelihood_array)
+    np.save(os.path.join(config.dropbox_directory, 'answersMonte200000.npy'), answer_array)
     with open('systemMonte.pickle', 'wb') as fp:
         cPickle.dump(system, fp, cPickle.HIGHEST_PROTOCOL)
