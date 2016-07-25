@@ -52,38 +52,25 @@ class MCMC_ML_System():
 
         return gmm_samples
 
-    def compute_samples_save(self, trial, destination_directory):
-        """
-        Compute samples for given utterance trials and save to file
-        :param trial_list:
-        :param destination_directory:
-        """
-        output_filename = os.path.basename(trial.feature_file).split('.')[0] + '.pickle'
-        destination_folder = trial.actual_speaker
-        output_filename = os.path.join(destination_directory, destination_folder, output_filename)
-        features = trial.get_data()
-        samples = self.get_samples(features)
-
-        if not os.path.exists(os.path.dirname(output_filename)):
-            os.makedirs(os.path.dirname(output_filename))
-
-        with open(output_filename, 'wb') as fp:
-            cPickle.dump(samples, fp, cPickle.HIGHEST_PROTOCOL)
-
     def train_background(self, background_features):
         self.ubm = sklearn.mixture.GMM(n_components=self.n_mixtures, n_init=10, n_iter=1000, tol=0.00001)
         self.ubm.fit(background_features)
 
-    def train_speakers(self, speaker_data):
+    def train_speakers(self, speaker_data, n_jobs, destination_directory=None):
         for speaker_id, features in speaker_data.iteritems():
-            self.model_samples[speaker_id] = self.get_samples(features)
+            logging.info('Sampling Speaker:{0}'.format(str(speaker_id)))
+            self.model_samples[speaker_id] = self.get_samples(features, n_jobs)
+            if destination_directory is not None:
+                with open(os.path.join(destination_directory, str(speaker_id) + '.pickle'), 'w') as fp:
+                    cPickle.dump(self.model_samples[speaker_id], fp, cPickle.HIGHEST_PROTOCOL)
 
     def load_background(self, filename):
         with open(filename, 'rb') as fp:
-            self.background_samples = cPickle.load(fp)
+            self.ubm = cPickle.load(fp)
 
     def load_speakers(self, speaker_data):
         for speaker_id, filename in speaker_data.iteritems():
+            logging.info('Loading Speaker:{0}'.format(str(speaker_id)))
             with open(filename, 'rb') as fp:
                 self.model_samples[speaker_id] = cPickle.load(fp)
 
