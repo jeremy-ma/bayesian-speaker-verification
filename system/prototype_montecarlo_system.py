@@ -11,7 +11,7 @@ from varun.RobustLikelihoodClass import Likelihood
 from scipy.misc import logsumexp
 
 
-class MonteCarloSystem():
+class PrototypeMonteCarloSystem():
 
     def __init__(self, num_gaussians=8, num_iterations=10000):
         self.num_mixtures = num_gaussians
@@ -107,7 +107,7 @@ if __name__ == '__main__':
                                trial_file=config.reddots_part4_trial_female)
     speaker_trials = manager.get_trial_data()
 
-    system = MonteCarloSystem(num_gaussians=8, num_iterations=200000)
+    system = PrototypeMonteCarloSystem(num_gaussians=128, num_iterations=200000)
     system.load_background(os.path.join(config.dropbox_directory, 'MonteCarloSamples',
                                         'gaussians8', 'iterations200000', 'background.npy'))
 

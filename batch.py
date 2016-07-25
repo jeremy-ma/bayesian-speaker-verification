@@ -1,6 +1,6 @@
 __author__ = 'jeremyma'
 import config
-from system import prototype_montecarlo_system
+from system import mcmc_system
 import multiprocessing
 from functools import partial
 from frontend import frontend
@@ -8,14 +8,14 @@ import numpy as np
 import cPickle
 import os
 import time
-
+import logging
 def batch_evaluate(num_iterations, num_gaussians):
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,
                                trial_file=config.reddots_part4_trial_female)
     speaker_trials = manager.get_trial_data()
 
-    system = prototype_montecarlo_system.MonteCarloSystem(num_gaussians=num_gaussians, num_iterations=num_iterations)
+    system = mcmc_system.MonteCarloSystem(num_gaussians=num_gaussians, num_iterations=num_iterations)
     system.load_background(os.path.join(config.dropbox_directory, 'MonteCarloSamples',
                                         'gaussians' + str(num_gaussians), 'iterations' + str(num_iterations), 'background.npy'))
 
@@ -44,48 +44,36 @@ def batch_evaluate(num_iterations, num_gaussians):
         cPickle.dump(system, fp, cPickle.HIGHEST_PROTOCOL)
 
 
-def batch_enrol():
+def batch_enrol(n_mixtures, n_runs):
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,
                                trial_file=config.reddots_part4_trial_female)
     save_path = os.path.join(config.dropbox_directory, config.computer_id)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-    #put into map format
 
-    enrolment_data = []
-    enrolment_data = [{'name': speaker_id, 'features': features} for speaker_id, features in manager.get_enrolment_data().iteritems() ]
-    enrolment_data.append({'name': 'background', 'features': manager.get_background_data()})
+    system = mcmc_system.MCMC_ML_System(n_mixtures=n_mixtures, n_runs=n_runs)
+    system.train_background(manager.get_background_data())
+    for speaker_id, features in manager.get_enrolment_data().iteritems():
+        if speaker_id != 'f0012':
+            continue
+        samples = system.get_samples(features, -1)
+        filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs,
+                                speaker_id + '.pickle'))
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+        with open(filename, 'wb') as fp:
+            cPickle.dump(samples, fp, cPickle.HIGHEST_PROTOCOL)
 
-    #for el in enrolment_data:
-    #    prototype_montecarlo_system.save_enrolment_samples(el, save_path, 100, 8)
-    pool = multiprocessing.Pool(None)
-    map_function = partial(prototype_montecarlo_system.save_enrolment_samples,
-                           save_path=save_path, num_iterations=500000, num_gaussians=8)
-    pool.map(map_function, enrolment_data)
-
-def batch_all():
-    start = time.time()
-    manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
-                                   enrol_file=config.reddots_part4_enrol_female,
-                                   trial_file=config.reddots_part4_trial_female)
-
-    save_path = os.path.join(config.dropbox_directory, config.computer_id)
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-    speaker_trials = manager.get_unique_trials()
-    all_trials = []
-    for _, trials in speaker_trials.iteritems():
-        all_trials.extend(trials)
-
-    pool = multiprocessing.Pool(None)
-    map_function = partial(prototype_montecarlo_system.calculate_samples,
-                           save_path=save_path, num_iterations=100, num_gaussians=8)
-    pool.map(map_function, all_trials)
-    print "done"
-    print time.time() - start
+    filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs),
+                                'system' + '.pickle')
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
+    with open(filename, 'wb') as fp:
+        cPickle.dump(system, fp, cPickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == '__main__':
-    batch_evaluate(num_gaussians=8, num_iterations=200000)
-    batch_evaluate(num_gaussians=8, num_iterations=500000)
+    logging.getLogger().setLevel(logging.INFO)
+
+    batch_enrol()

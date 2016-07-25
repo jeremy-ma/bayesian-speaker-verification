@@ -32,7 +32,7 @@ class BobGmmSystem():
         for speaker_id, features in speaker_features.iteritems():
             logging.info("BobGmmSystem: Training speaker: {0}".format(speaker_id))
             print "BobGmmSystem: Training speaker: {0}".format(speaker_id)
-            print features.shape
+            #print features.shape
             self.individuals[speaker_id] = self.model.enroll_gmm(features)
 
     def verify(self, claimed_speaker, features):
@@ -44,7 +44,6 @@ class BobGmmSystem():
         """
         ubm = self.model.ubm
         likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - ubm.log_likelihood(features)
-        print features.shape
 
         return likelihood_ratio
 
@@ -73,8 +72,8 @@ if __name__ == '__main__':
             likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data()))
 
     #save results
-    np.save('scores.npy', likelihood_array)
-    np.save('answers.npy', answer_array)
+    np.save('map_scores.npy', likelihood_array)
+    np.save('map_answers.npy', answer_array)
     with open('system.pickle', 'wb') as fp:
         pickle.dump(system, fp, pickle.HIGHEST_PROTOCOL)
 
