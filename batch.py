@@ -53,10 +53,10 @@ def batch_enrol(n_mixtures, n_runs):
         os.makedirs(save_path)
 
     system = mcmc_system.MCMC_ML_System(n_mixtures=n_mixtures, n_runs=n_runs)
+    logging.info('Training background model...')
     system.train_background(manager.get_background_data())
     for speaker_id, features in manager.get_enrolment_data().iteritems():
-        if speaker_id != 'f0012':
-            continue
+        logging.info('Sampling Speaker:{0}'.format(str(speaker_id)))
         samples = system.get_samples(features, -1)
         filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs,
                                 speaker_id + '.pickle'))
@@ -75,5 +75,4 @@ def batch_enrol(n_mixtures, n_runs):
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
-
-    batch_enrol()
+    batch_enrol(32, 100)
