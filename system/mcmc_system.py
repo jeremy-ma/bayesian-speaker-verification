@@ -32,7 +32,7 @@ class MCMC_ML_System():
                          CovarsStaticPrior(np.array(self.ubm.covars_)),
                          WeightsStaticPrior(np.array(self.ubm.weights_)))
 
-        proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.001, 0.005]),
+        proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.005, 0.01, 0.1]),
                                           propose_covars=None,
                                           propose_weights=None)
 
@@ -41,9 +41,14 @@ class MCMC_ML_System():
         mc = MarkovChain(proposal, prior, initial_gmm)
         # make samples
         gmm_samples = mc.sample(X, n_samples=self.n_runs, n_jobs=n_jobs)
-        logging.info('Means Acceptance: {0}'.format(proposal.propose_mean.get_acceptance()))
-        logging.info('Covars Acceptance: {0}'.format(proposal.propose_covars.get_acceptance()))
-        logging.info('Weights Acceptance: {0}'.format(proposal.propose_weights.get_acceptance()))
+        if proposal.propose_mean is not None:
+            logging.info('Means Acceptance: {0}'.format(proposal.propose_mean.get_acceptance()))
+
+        if proposal.propose_covars is not None:
+            logging.info('Covars Acceptance: {0}'.format(proposal.propose_covars.get_acceptance()))
+
+        if proposal.propose_weights is not None:
+            logging.info('Weights Acceptance: {0}'.format(proposal.propose_weights.get_acceptance()))
 
         return gmm_samples
 

@@ -55,6 +55,16 @@ def batch_enrol(n_mixtures, n_runs):
     system = mcmc_system.MCMC_ML_System(n_mixtures=n_mixtures, n_runs=n_runs)
     logging.info('Training background model...')
     system.train_background(manager.get_background_data())
+
+    filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs),
+                            'system' + '.pickle')
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
+    with open(filename, 'wb') as fp:
+        cPickle.dump(system, fp, cPickle.HIGHEST_PROTOCOL)
+
+    logging.info('Beginning Monte Carlo Sampling')
+
     for speaker_id, features in manager.get_enrolment_data().iteritems():
         logging.info('Sampling Speaker:{0}'.format(str(speaker_id)))
         samples = system.get_samples(features, -1)
@@ -65,14 +75,6 @@ def batch_enrol(n_mixtures, n_runs):
         with open(filename, 'wb') as fp:
             cPickle.dump(samples, fp, cPickle.HIGHEST_PROTOCOL)
 
-    filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs),
-                                'system' + '.pickle')
-    if not os.path.exists(os.path.dirname(filename)):
-        os.makedirs(os.path.dirname(filename))
-    with open(filename, 'wb') as fp:
-        cPickle.dump(system, fp, cPickle.HIGHEST_PROTOCOL)
-
-
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
-    batch_enrol(32, 100)
+    batch_enrol(128, 100)

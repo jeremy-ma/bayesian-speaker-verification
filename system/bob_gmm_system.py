@@ -3,6 +3,7 @@ from bob.bio.gmm.algorithm import GMM
 import logging
 from frontend import  frontend
 import config, os
+import pdb
 import bob
 from sklearn import metrics
 import numpy as np
@@ -43,6 +44,7 @@ class BobGmmSystem():
         :return:
         """
         ubm = self.model.ubm
+        pdb.set_trace()
         likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - ubm.log_likelihood(features)
 
         return likelihood_ratio
