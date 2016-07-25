@@ -58,8 +58,8 @@ def batch_enrol(n_mixtures, n_runs):
     for speaker_id, features in manager.get_enrolment_data().iteritems():
         logging.info('Sampling Speaker:{0}'.format(str(speaker_id)))
         samples = system.get_samples(features, -1)
-        filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs,
-                                speaker_id + '.pickle'))
+        filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs),
+                                str(speaker_id) + '.pickle')
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
         with open(filename, 'wb') as fp:
