@@ -33,8 +33,8 @@ class MCMC_ML_System():
                          WeightsStaticPrior(np.array(self.ubm.weights_)))
 
         proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.001, 0.005]),
-                                          propose_covars=GaussianStepCovarProposal(step_sizes=[0.0001]),
-                                          propose_weights=GaussianStepWeightsProposal(self.n_mixtures, step_sizes=[0.01, 0.1]))
+                                          propose_covars=None,
+                                          propose_weights=None)
 
         initial_gmm = GMM(means=self.ubm.means_, covariances=self.ubm.covars_, weights=self.ubm.weights_)
 
