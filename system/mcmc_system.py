@@ -14,43 +14,11 @@ from gmmmc.proposals import GMMBlockMetropolisProposal, GaussianStepCovarProposa
 from gmmmc import MarkovChain
 import logging
 
-class MCMC_ML_System():
+class MCSystem(object):
 
-    def __init__(self, n_mixtures=8, n_runs=10000):
+    def __init__(self, n_mixtures=8):
         self.n_mixtures = n_mixtures
-        self.n_runs = n_runs
         self.model_samples = {}
-
-    def get_samples(self, X, n_jobs):
-        """
-        GMM monte carlo
-        :param X:
-        :return: monte carlo samples
-        """
-
-        prior = GMMPrior(MeansUniformPrior(X.min(), X.max(), self.n_mixtures, X.shape[1]),
-                         CovarsStaticPrior(np.array(self.ubm.covars_)),
-                         WeightsStaticPrior(np.array(self.ubm.weights_)))
-
-        proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.005, 0.01, 0.1]),
-                                          propose_covars=None,
-                                          propose_weights=None)
-
-        initial_gmm = GMM(means=self.ubm.means_, covariances=self.ubm.covars_, weights=self.ubm.weights_)
-
-        mc = MarkovChain(proposal, prior, initial_gmm)
-        # make samples
-        gmm_samples = mc.sample(X, n_samples=self.n_runs, n_jobs=n_jobs)
-        if proposal.propose_mean is not None:
-            logging.info('Means Acceptance: {0}'.format(proposal.propose_mean.get_acceptance()))
-
-        if proposal.propose_covars is not None:
-            logging.info('Covars Acceptance: {0}'.format(proposal.propose_covars.get_acceptance()))
-
-        if proposal.propose_weights is not None:
-            logging.info('Weights Acceptance: {0}'.format(proposal.propose_weights.get_acceptance()))
-
-        return gmm_samples
 
     def train_background(self, background_features):
         self.ubm = sklearn.mixture.GMM(n_components=self.n_mixtures, n_init=10, n_iter=1000, tol=0.00001)
@@ -64,21 +32,51 @@ class MCMC_ML_System():
                 with open(os.path.join(destination_directory, str(speaker_id) + '.pickle'), 'w') as fp:
                     cPickle.dump(self.model_samples[speaker_id], fp, cPickle.HIGHEST_PROTOCOL)
 
-    def load_background(self, filename):
-        with open(filename, 'rb') as fp:
-            self.ubm = cPickle.load(fp)
+    def load_background(self, background):
+        self.ubm = background
 
     def load_speakers(self, speaker_data):
-        for speaker_id, filename in speaker_data.iteritems():
-            logging.info('Loading Speaker:{0}'.format(str(speaker_id)))
-            with open(filename, 'rb') as fp:
-                self.model_samples[speaker_id] = cPickle.load(fp)
+        self.model_samples = speaker_data
 
-    def verify(self, claimed_speaker, features):
-        gmm_samples = self.model_samples[claimed_speaker]
+class MCMC_ML_System(MCSystem):
+
+    def __init__(self, n_mixtures, n_runs):
+        super(MCMC_ML_System, self).__init__(n_mixtures)
+        self.n_runs = n_runs
+
+    def set_params(self, proposal, prior):
+        self.proposal = proposal
+        self.prior = prior
+
+    def get_samples(self, X, n_jobs):
+        """
+        GMM monte carlo
+        :param X:
+        :return: monte carlo samples
+        """
+
+        initial_gmm = GMM(means=self.ubm.means_, covariances=self.ubm.covars_, weights=self.ubm.weights_)
+
+        mc = MarkovChain(self.proposal, self.prior, initial_gmm)
+        # make samples
+        gmm_samples = mc.sample(X, n_samples=self.n_runs, n_jobs=n_jobs)
+        if self.proposal.propose_mean is not None:
+            logging.info('Means Acceptance: {0}'.format(self.proposal.propose_mean.get_acceptance()))
+
+        if self.proposal.propose_covars is not None:
+            logging.info('Covars Acceptance: {0}'.format(self.proposal.propose_covars.get_acceptance()))
+
+        if self.proposal.propose_weights is not None:
+            logging.info('Weights Acceptance: {0}'.format(self.proposal.propose_weights.get_acceptance()))
+
+        return gmm_samples
+
+
+    def verify(self, claimed_speaker, features, burn_in, lag, n_jobs):
+        gmm_samples = self.model_samples[claimed_speaker][burn_in::lag]
         claimed_likelihoods = []
         for gmm in gmm_samples:
-            claimed_likelihoods.append(gmm.log_likelihood(features))
+            claimed_likelihoods.append(gmm.log_likelihood(features, n_jobs))
         claimed = logsumexp(np.array(claimed_likelihoods)) - np.log(len(gmm_samples))
         background = np.sum(self.ubm.score(features))
         likelihood_ratio = claimed - background

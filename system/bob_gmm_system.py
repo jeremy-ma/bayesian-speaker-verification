@@ -44,7 +44,6 @@ class BobGmmSystem():
         :return:
         """
         ubm = self.model.ubm
-        pdb.set_trace()
         likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - ubm.log_likelihood(features)
 
         return likelihood_ratio
@@ -57,7 +56,7 @@ if __name__ == '__main__':
 
     total = sum([len(trials) for _, trials in manager.speaker_trials.iteritems()])
 
-    system = BobGmmSystem(num_gaussians=8)
+    system = BobGmmSystem(num_gaussians=128)
     print "training background"
     system.train_background(manager.get_background_data())
     print "training speaker models"
@@ -76,6 +75,6 @@ if __name__ == '__main__':
     #save results
     np.save('map_scores.npy', likelihood_array)
     np.save('map_answers.npy', answer_array)
-    with open('system.pickle', 'wb') as fp:
+    with open('systemG128.pickle', 'wb') as fp:
         pickle.dump(system, fp, pickle.HIGHEST_PROTOCOL)
 
