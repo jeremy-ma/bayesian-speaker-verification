@@ -23,8 +23,7 @@ def batch_enrol(n_mixtures, n_runs, description):
 
     system = mcmc_system.MCMC_ML_System(n_mixtures=n_mixtures, n_runs=n_runs)
 
-    filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs),
-                            'ubm' + '.pickle')
+    filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'ubm' + '.pickle')
 
     try:
         with open(filename) as fp:
