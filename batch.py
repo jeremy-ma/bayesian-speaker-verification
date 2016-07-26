@@ -56,6 +56,9 @@ def batch_enrol(n_mixtures, n_runs, description):
     logging.info('Beginning Monte Carlo Sampling')
 
     save_dir = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
     system.train_speakers(manager.get_enrolment_data(), -1, save_dir)
 
     logging.info('Saving system to file')
@@ -64,4 +67,4 @@ def batch_enrol(n_mixtures, n_runs, description):
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
-    batch_enrol(8, 10, 'gaussian_priors')
+    batch_enrol(128, 1, 'gaussian_priors')
