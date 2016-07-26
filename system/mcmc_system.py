@@ -38,6 +38,9 @@ class MCSystem(object):
     def load_speakers(self, speaker_data):
         self.model_samples = speaker_data
 
+    def get_samples(self, features, n_jobs):
+        pass
+
 class MCMC_ML_System(MCSystem):
 
     def __init__(self, n_mixtures, n_runs):

@@ -24,6 +24,7 @@ class BobGmmSystem():
         self.model.enroll_trainer = bob.learn.em.MAP_GMMTrainer(self.model.ubm,
                                     relevance_factor = self.model.relevance_factor,
                                     update_means = True, update_variances = False)
+        self.model.gmm_enroll_iterations = 5
 
     def train_speakers(self, speaker_features):
         """

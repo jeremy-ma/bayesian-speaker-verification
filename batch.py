@@ -44,7 +44,7 @@ def batch_enrol(n_mixtures, n_runs, description):
     #                 CovarsStaticPrior(np.array(system.ubm.covars_)),
     #                 WeightsStaticPrior(np.array(system.ubm.weights_)))
 
-    prior = GMMPrior(MeansGaussianPrior(system.ubm.means_, np.ones((n_mixtures, X.shape[1]))),
+    prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means_), np.ones((n_mixtures, X.shape[1]))),
                      CovarsStaticPrior(np.array(system.ubm.covars_)),
                      WeightsStaticPrior(np.array(system.ubm.weights_)))
 
@@ -65,4 +65,4 @@ def batch_enrol(n_mixtures, n_runs, description):
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
-    batch_enrol(8, 20000, 'gaussian_priors')
+    batch_enrol(8, 10, 'gaussian_priors')
