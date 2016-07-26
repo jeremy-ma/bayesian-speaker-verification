@@ -47,7 +47,7 @@ def batch_enrol(n_mixtures, n_runs, description):
                      CovarsStaticPrior(np.array(system.ubm.covars_)),
                      WeightsStaticPrior(np.array(system.ubm.weights_)))
 
-    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.0005, 0.001, 0.005]),
+    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.01, 0.05, 0.1]),
                                       propose_covars=None,
                                       propose_weights=None)
 
@@ -67,4 +67,4 @@ def batch_enrol(n_mixtures, n_runs, description):
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
-    batch_enrol(128, 1, 'gaussian_priors')
+    batch_enrol(128, 10, 'gaussian_priors')
