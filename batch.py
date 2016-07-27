@@ -78,7 +78,7 @@ def enrol_ais(n_mixtures, n_runs, description):
     X = manager.get_background_data()
 
     betas = [0.0]
-    betas.extend(np.logspace(-2, 0, 100))
+    betas.extend(np.logspace(-2, 0, 200))
     system = mcmc_system.AIS_System(n_mixtures, n_runs, betas)
 
     filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'ubm' + '.pickle')
@@ -107,7 +107,8 @@ def enrol_ais(n_mixtures, n_runs, description):
 
     proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.005, 0.01, 0.1]),
                                           propose_covars=None,
-                                          propose_weights=None)
+                                          propose_weights=None,
+                                          propose_iterations=10)
 
     system.set_params(proposal, prior)
 
@@ -125,4 +126,4 @@ def enrol_ais(n_mixtures, n_runs, description):
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
-    enrol_ais(8, 10, 'ais_gaussian_priors')
+    enrol_ais(8, 1, 'ais_gaussian_priors')
