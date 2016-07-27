@@ -41,6 +41,20 @@ class MCSystem(object):
     def get_samples(self, features, n_jobs):
         pass
 
+
+class AIS_System(MCSystem):
+    def __init__(self, n_runs):
+        super(MCMC_ML_System, self).__init__(n_mixtures)
+        self.n_runs = n_runs
+
+    def set_params(self, proposal, prior):
+        self.proposal = proposal
+        self.prior = prior
+
+    def get_samples(self, X, betas, n_jobs):
+        betas = [0.0]
+
+
 class MCMC_ML_System(MCSystem):
 
     def __init__(self, n_mixtures, n_runs):

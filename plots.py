@@ -3,7 +3,7 @@ import config
 import numpy as np
 from sklearn import metrics
 import matplotlib.pyplot as plt
-
+import pdb
 
 def detection_error_tradeoff(y_true, probas_pred, pos_label=None,
                              sample_weight=None):
@@ -50,17 +50,29 @@ def detection_error_tradeoff(y_true, probas_pred, pos_label=None,
     sl = range(first_ind, last_ind)[::-1]
     return fps[sl] / fps[-1], fns[sl] / tps[-1], thresholds[sl]
 
+def EER(fps, fns):
+    min_diff = np.inf
+    min_ind = 0
+    for i in xrange(len(fps)):
+        diff = abs(fps[i] - fns[i])
+        if diff < min_diff:
+            min_diff = diff
+            min_ind = i
+    return (fps[min_ind], fns[min_ind])
 
 
+n_mixtures = 8
+n_runs = 20000
 
-save_path = os.path.join(config.dropbox_directory, config.computer_id)
+save_path = os.path.join(config.dropbox_directory, config.computer_id, 'gaussian_priors')
+save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
 
 
-filename = os.path.join(save_path, 'scoresMHMC' + 'G' + str(128) +
-                         '_N' + str(10000) + '.npy')
+filename = os.path.join(save_path, 'scoresMHMC' + 'G' + str(8) +
+                         '_N' + str(20000) + '.npy')
 scoresMHMC = np.load(filename)
-filename = os.path.join(save_path, 'answersMHMC' + 'G' + str(128) +
-                        '_N' + str(10000) + '.npy')
+filename = os.path.join(save_path, 'answersMHMC' + 'G' + str(8) +
+                        '_N' + str(20000) + '.npy')
 answersMHMC = np.load(filename)
 
 scoresMAP = np.load('map_scores.npy')
@@ -77,6 +89,10 @@ plt.plot(fps_MAP, fns_MAP, 'g', label='MAP')
 
 plt.ylabel('False Negative Rate')
 plt.xlabel('False Positive Rate')
+
+print EER(fps_MHMC, fns_MHMC)
+print EER(fps_MAP, fns_MAP)
+
 
 plt.legend(loc='lower right')
 plt.plot([0, 1], [0, 1], 'r--')
