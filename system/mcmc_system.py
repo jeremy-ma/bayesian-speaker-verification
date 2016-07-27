@@ -11,7 +11,7 @@ from gmmmc import GMM
 import sklearn.mixture
 from gmmmc.priors import MeansUniformPrior, CovarsStaticPrior, WeightsStaticPrior, GMMPrior
 from gmmmc.proposals import GMMBlockMetropolisProposal, GaussianStepCovarProposal, GaussianStepWeightsProposal, GaussianStepMeansProposal
-from gmmmc import MarkovChain
+from gmmmc import MarkovChain, AnnealedImportanceSampling
 import logging
 
 class MCSystem(object):
@@ -43,17 +43,38 @@ class MCSystem(object):
 
 
 class AIS_System(MCSystem):
-    def __init__(self, n_runs):
-        super(MCMC_ML_System, self).__init__(n_mixtures)
+    def __init__(self, n_mixtures, n_runs, betas):
+        super(AIS_System, self).__init__(n_mixtures)
         self.n_runs = n_runs
+        self.betas = betas
 
     def set_params(self, proposal, prior):
         self.proposal = proposal
         self.prior = prior
 
-    def get_samples(self, X, betas, n_jobs):
-        betas = [0.0]
+    def get_samples(self, X, n_jobs):
+        ais = AnnealedImportanceSampling(self.proposal, self.prior, self.betas)
+        samples = ais.sample(X, self.n_runs, n_jobs)
 
+        if self.proposal.propose_mean is not None:
+            logging.info('Means Acceptance: {0}'.format(self.proposal.propose_mean.get_acceptance()))
+
+        if self.proposal.propose_covars is not None:
+            logging.info('Covars Acceptance: {0}'.format(self.proposal.propose_covars.get_acceptance()))
+
+        if self.proposal.propose_weights is not None:
+            logging.info('Weights Acceptance: {0}'.format(self.proposal.propose_weights.get_acceptance()))
+
+        return samples
+
+    def verify(self, claimed_speaker, features, n_jobs):
+        ais_samples = self.model_samples[claimed_speaker]
+        numerator = logsumexp([logweight + gmm.log_likelihood(features, n_jobs) for gmm, logweight in ais_samples])
+        denominator = logsumexp([logweight for _, logweight in ais_samples])
+        claimed = numerator - denominator
+        background = np.sum(self.ubm.score(features))
+        likelihood_ratio = claimed - background
+        return likelihood_ratio
 
 class MCMC_ML_System(MCSystem):
 
