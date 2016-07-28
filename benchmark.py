@@ -77,11 +77,11 @@ system.set_params(proposal, prior)
 
 logging.info('Beginning Monte Carlo Sampling')
 
-for n_jobs in [1,4, 8, 16, 32, 48]:
-    print "n_jobs:{0}".format(n_jobs)
+for n_jobs in [1,4,8, 16, 32, 48]:
     start = time.time()
     system.train_speakers(manager.get_enrolment_data(), n_jobs, save_dir)
-    print start - time.time()
+    logging.info("n_jobs:{0}".format(n_jobs))
+    logging.info('time:{0}'.format(time.time() - start))
 
 logging.info('Saving system to file')
 with open(os.path.join(save_dir, 'system.pickle'), 'w') as fp:
