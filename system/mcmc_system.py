@@ -9,10 +9,9 @@ import numpy as np
 from scipy.misc import logsumexp
 from gmmmc import GMM
 import sklearn.mixture
-from gmmmc.priors import MeansUniformPrior, CovarsStaticPrior, WeightsStaticPrior, GMMPrior
-from gmmmc.proposals import GMMBlockMetropolisProposal, GaussianStepCovarProposal, GaussianStepWeightsProposal, GaussianStepMeansProposal
 from gmmmc import MarkovChain, AnnealedImportanceSampling
 import logging
+import bob.bio.gmm.algorithm
 
 class MCSystem(object):
 
@@ -21,8 +20,9 @@ class MCSystem(object):
         self.model_samples = {}
 
     def train_background(self, background_features):
-        self.ubm = sklearn.mixture.GMM(n_components=self.n_mixtures, n_init=10, n_iter=1000, tol=0.00001)
-        self.ubm.fit(background_features)
+        bobmodel = bob.bio.gmm.algorithm.GMM(self.n_mixtures)
+        bobmodel.train_ubm(background_features)
+        self.ubm = bobmodel.ubm
 
     def train_speakers(self, speaker_data, n_jobs, destination_directory=None):
         for speaker_id, features in speaker_data.iteritems():
@@ -93,7 +93,7 @@ class MCMC_ML_System(MCSystem):
         :return: monte carlo samples
         """
 
-        initial_gmm = GMM(means=self.ubm.means_, covariances=self.ubm.covars_, weights=self.ubm.weights_)
+        initial_gmm = GMM(means=self.ubm.means, covariances=self.ubm.variances, weights=self.ubm.weights)
 
         mc = MarkovChain(self.proposal, self.prior, initial_gmm)
         # make samples

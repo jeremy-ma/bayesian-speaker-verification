@@ -35,7 +35,7 @@ if __name__=='__main__':
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                    enrol_file=config.reddots_part4_enrol_female,
                                    trial_file=config.reddots_part4_trial_female)
-    n_mixtures, n_runs = 8, 10
+    n_mixtures, n_runs = 8, 100
     data = manager.get_background_data()
     description = 'ais_gaussian_priors'
     save_path = os.path.join(config.dropbox_directory, config.computer_id, description)

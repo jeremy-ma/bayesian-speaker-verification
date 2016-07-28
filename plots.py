@@ -62,7 +62,7 @@ def EER(fps, fns):
 
 
 n_mixtures = 8
-n_runs = 10
+n_runs = 100
 description = 'ais_gaussian_priors'
 type = 'AIS'
 
