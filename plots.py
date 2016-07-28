@@ -62,17 +62,18 @@ def EER(fps, fns):
 
 
 n_mixtures = 8
-n_runs = 20000
-description = 'gaussian_priors'
+n_runs = 100
+description = 'ais_gaussian_priors'
+type = 'AIS'
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
 
 
-filename = os.path.join(save_path, 'scoresMHMC' + 'G' + str(n_mixtures) +
+filename = os.path.join(save_path, 'scores' + type + 'G' + str(n_mixtures) +
                          '_N' + str(n_runs) + '.npy')
 scoresMHMC = np.load(filename)
-filename = os.path.join(save_path, 'answersMHMC' + 'G' + str(n_mixtures) +
+filename = os.path.join(save_path, 'answers'+ type + 'G' + str(n_mixtures) +
                         '_N' + str(n_runs) + '.npy')
 answersMHMC = np.load(filename)
 
