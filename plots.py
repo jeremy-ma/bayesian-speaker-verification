@@ -62,9 +62,9 @@ def EER(fps, fns):
 
 
 n_mixtures = 8
-n_runs = 100
-description = 'ais_gaussian_priors'
-type = 'AIS'
+n_runs = 20000
+description = 'gaussian_priors'
+type = 'MHMC'
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
@@ -77,15 +77,26 @@ filename = os.path.join(save_path, 'answers'+ type + 'G' + str(n_mixtures) +
                         '_N' + str(n_runs) + '.npy')
 answersMHMC = np.load(filename)
 
+filename = os.path.join(save_path, 'scores' + 'MCMAPPrior' + 'G' + str(n_mixtures) +
+                        '_N' + str(n_runs) + '.npy')
+scoresMHMCP = np.load(filename)
+filename = os.path.join(save_path, 'answers' + 'MCMAPPrior' + 'G' + str(n_mixtures) +
+                        '_N' + str(n_runs) + '.npy')
+answersMHMCP = np.load(filename)
+
 scoresMAP = np.load('map_scores.npy')
 answersMAP = np.load('map_answers.npy')
 
 fps_MHMC, fns_MHMC, _ = detection_error_tradeoff(answersMHMC, scoresMHMC)
 
+fps_MHMCP, fns_MHMCP, _ = detection_error_tradeoff(answersMHMCP, scoresMHMCP)
+
+
 fps_MAP, fns_MAP, _ = detection_error_tradeoff(answersMAP, scoresMAP)
 
 plt.title('Detection Error Tradeoff')
 plt.plot(fps_MHMC, fns_MHMC, 'r', label='GMM-MHMC')
+plt.plot(fps_MHMCP, fns_MHMCP, 'b', label='GMM-MHMC MAP estimate')
 
 plt.plot(fps_MAP, fns_MAP, 'g', label='MAP')
 

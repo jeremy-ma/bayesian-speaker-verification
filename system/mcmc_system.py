@@ -110,7 +110,7 @@ class MCMC_ML_System(MCSystem):
         return gmm_samples
 
 
-    def verify(self, claimed_speaker, features, burn_in, lag, n_jobs):
+    def verify(self, claimed_speaker, features, n_jobs, burn_in=0, lag=50):
         gmm_samples = self.model_samples[claimed_speaker][burn_in::lag]
         claimed_likelihoods = []
         for gmm in gmm_samples:

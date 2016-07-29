@@ -14,7 +14,7 @@ from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
 
-n_mixtures, n_runs, description = 8, 100, 'mcmc_gaussian3_priors'
+n_mixtures, n_runs, description = 8, 100, 'mcmc_gaussian_prior_gmmcovars'
 
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,
@@ -64,11 +64,11 @@ except:
 #                 CovarsStaticPrior(np.array(system.ubm.covars_)),
 #                 WeightsStaticPrior(np.array(system.ubm.weights_)))
 
-prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), 3 * np.ones((n_mixtures, X.shape[1]))),
+prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), np.array(system.ubm.variances)),
                  CovarsStaticPrior(np.array(system.ubm.variances)),
                  WeightsStaticPrior(np.array(system.ubm.weights)))
 
-proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.01, 0.05, 0.1]),
+proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.0005, 0.001, 0.005]),
                                       propose_covars=None,
                                       propose_weights=None)
 
