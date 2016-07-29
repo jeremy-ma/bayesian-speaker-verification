@@ -63,34 +63,29 @@ def EER(fps, fns):
 
 n_mixtures = 8
 n_runs = 20000
-description = 'gaussian_priors'
+description = 'mcmc_gaussian_prior_gmmcovars'
 type = 'MHMC'
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
 
 
-filename = os.path.join(save_path, 'scores' + type + 'G' + str(n_mixtures) +
-                         '_N' + str(n_runs) + '.npy')
+filename = os.path.join(save_path, 'scoresMHMC.npy')
 scoresMHMC = np.load(filename)
-filename = os.path.join(save_path, 'answers'+ type + 'G' + str(n_mixtures) +
-                        '_N' + str(n_runs) + '.npy')
+filename = os.path.join(save_path, 'answersMHMC.npy')
 answersMHMC = np.load(filename)
 
-filename = os.path.join(save_path, 'scores' + 'MCMAPPrior' + 'G' + str(n_mixtures) +
-                        '_N' + str(n_runs) + '.npy')
+filename = os.path.join(save_path, 'scoresMCMAP.npy')
 scoresMHMCP = np.load(filename)
-filename = os.path.join(save_path, 'answers' + 'MCMAPPrior' + 'G' + str(n_mixtures) +
-                        '_N' + str(n_runs) + '.npy')
+filename = os.path.join(save_path, 'answersMCMAP.npy')
 answersMHMCP = np.load(filename)
 
-scoresMAP = np.load('map_scores.npy')
-answersMAP = np.load('map_answers.npy')
+scoresMAP = np.load('map_scores2.npy')
+answersMAP = np.load('map_answers2.npy')
 
 fps_MHMC, fns_MHMC, _ = detection_error_tradeoff(answersMHMC, scoresMHMC)
 
 fps_MHMCP, fns_MHMCP, _ = detection_error_tradeoff(answersMHMCP, scoresMHMCP)
-
 
 fps_MAP, fns_MAP, _ = detection_error_tradeoff(answersMAP, scoresMAP)
 
@@ -105,7 +100,6 @@ plt.xlabel('False Positive Rate')
 
 print EER(fps_MHMC, fns_MHMC)
 print EER(fps_MAP, fns_MAP)
-
 
 plt.legend(loc='lower right')
 plt.plot([0, 1], [0, 1], 'r--')
