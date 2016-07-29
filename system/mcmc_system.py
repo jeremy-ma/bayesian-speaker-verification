@@ -22,7 +22,7 @@ class MCSystem(object):
     def train_background(self, background_features):
         bobmodel = bob.bio.gmm.algorithm.GMM(self.n_mixtures)
         bobmodel.train_ubm(background_features)
-        self.ubm = bobmodel.ubm
+        self.ubm = GMM(np.array(bobmodel.ubm.means), np.array(bobmodel.ubm.variances), np.array(bobmodel.ubm.weights))
 
     def train_speakers(self, speaker_data, n_jobs, destination_directory=None):
         for speaker_id, features in speaker_data.iteritems():
@@ -37,9 +37,6 @@ class MCSystem(object):
 
     def load_speakers(self, speaker_data):
         self.model_samples = speaker_data
-
-    def get_samples(self, features, n_jobs):
-        pass
 
 
 class AIS_System(MCSystem):
@@ -72,8 +69,9 @@ class AIS_System(MCSystem):
         numerator = logsumexp([logweight + gmm.log_likelihood(features, n_jobs) for gmm, logweight in ais_samples])
         denominator = logsumexp([logweight for _, logweight in ais_samples])
         claimed = numerator - denominator
-        background = np.sum(self.ubm.score(features))
+        background = self.ubm.log_likelihood(features, n_jobs)
         likelihood_ratio = claimed - background
+
         return likelihood_ratio
 
 class MCMC_ML_System(MCSystem):
@@ -92,9 +90,7 @@ class MCMC_ML_System(MCSystem):
         :param X:
         :return: monte carlo samples
         """
-
-        initial_gmm = GMM(means=self.ubm.means, covariances=self.ubm.variances, weights=self.ubm.weights)
-
+        initial_gmm = GMM(means=self.ubm.means, covariances=self.ubm.covars, weights=self.ubm.weights)
         mc = MarkovChain(self.proposal, self.prior, initial_gmm)
         # make samples
         gmm_samples = mc.sample(X, n_samples=self.n_runs, n_jobs=n_jobs)
@@ -116,10 +112,11 @@ class MCMC_ML_System(MCSystem):
         for gmm in gmm_samples:
             claimed_likelihoods.append(gmm.log_likelihood(features, n_jobs))
         claimed = logsumexp(np.array(claimed_likelihoods)) - np.log(len(gmm_samples))
-        background = np.sum(self.ubm.score(features))
+        background = self.ubm.log_likelihood(features, n_jobs)
         likelihood_ratio = claimed - background
-        return likelihood_ratio
 
+        return likelihood_ratio
+"""
 def save_enrolment_samples(model_data, save_path, n_runs, n_mixtures):
     model_name = model_data['name']
     model_features = model_data['features']
@@ -137,3 +134,4 @@ def calculate_samples(trial, save_path, num_iterations, num_gaussians):
     start = time.time()
     system.compute_samples_save(trial, save_path)
     print time.time() - start
+"""

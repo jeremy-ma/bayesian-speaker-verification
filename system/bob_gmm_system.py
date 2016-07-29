@@ -1,5 +1,6 @@
 __author__ = 'jeremyma'
 from bob.bio.gmm.algorithm import GMM
+import gmmmc
 import logging
 from frontend import  frontend
 import config, os
@@ -20,12 +21,15 @@ class BobGmmSystem():
 
     def train_background(self, X):
         self.model.train_ubm(X)
-        pdb.set_trace()
         # enroll trainer because train_ubm has a bug
         self.model.enroll_trainer = bob.learn.em.MAP_GMMTrainer(self.model.ubm,
                                     relevance_factor = self.model.relevance_factor,
                                     update_means = True, update_variances = False)
         self.model.gmm_enroll_iterations = 5
+        self.ubm = gmmmc.GMM(np.array(self.model.ubm.means),
+                             np.array(self.model.ubm.variances),
+                             np.array(self.model.ubm.weights))
+
     def train_speakers(self, speaker_features):
         """
         enrol speakers
@@ -44,9 +48,8 @@ class BobGmmSystem():
         :param features: numpy array
         :return:
         """
-        ubm = self.model.ubm
-        #likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - ubm.log_likelihood(features)
-        likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - np.sum(ubm.score(features))
+        likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - self.ubm.log_likelihood(features)
+        #likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - np.sum(ubm.score(features))
 
         return likelihood_ratio
 

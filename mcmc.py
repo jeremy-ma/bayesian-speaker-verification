@@ -64,8 +64,8 @@ except:
 #                 CovarsStaticPrior(np.array(system.ubm.covars_)),
 #                 WeightsStaticPrior(np.array(system.ubm.weights_)))
 
-prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), np.array(system.ubm.variances)),
-                 CovarsStaticPrior(np.array(system.ubm.variances)),
+prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), np.array(system.ubm.covars)),
+                 CovarsStaticPrior(np.array(system.ubm.covars)),
                  WeightsStaticPrior(np.array(system.ubm.weights)))
 
 proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.0005, 0.001, 0.005]),
