@@ -17,7 +17,6 @@ class BobGmmSystem():
     def __init__(self, num_gaussians=8):
         self.model = GMM(num_gaussians)
         self.individuals = {}
-        self.likelihood_threshold = 1.0
 
     def train_background(self, X):
         self.model.train_ubm(X)
@@ -61,7 +60,7 @@ if __name__ == '__main__':
 
     total = sum([len(trials) for _, trials in manager.speaker_trials.iteritems()])
 
-    system = BobGmmSystem(num_gaussians=128)
+    system = BobGmmSystem(num_gaussians=8)
     print "training background"
     system.train_background(manager.get_background_data())
     print "training speaker models"
@@ -78,8 +77,6 @@ if __name__ == '__main__':
             likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data()))
 
     #save results
-    np.save('map_scores.npy', likelihood_array)
-    np.save('map_answers.npy', answer_array)
-    with open('systemG128.pickle', 'wb') as fp:
-        pickle.dump(system, fp, pickle.HIGHEST_PROTOCOL)
+    np.save('map_scores1.npy', likelihood_array)
+    np.save('map_answers1.npy', answer_array)
 
