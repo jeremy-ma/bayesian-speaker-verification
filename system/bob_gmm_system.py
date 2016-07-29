@@ -26,7 +26,6 @@ class BobGmmSystem():
                                     relevance_factor = self.model.relevance_factor,
                                     update_means = True, update_variances = False)
         self.model.gmm_enroll_iterations = 5
-
     def train_speakers(self, speaker_features):
         """
         enrol speakers
@@ -46,7 +45,8 @@ class BobGmmSystem():
         :return:
         """
         ubm = self.model.ubm
-        likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - ubm.log_likelihood(features)
+        #likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - ubm.log_likelihood(features)
+        likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - np.sum(ubm.score(features))
 
         return likelihood_ratio
 
