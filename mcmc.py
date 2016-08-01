@@ -14,7 +14,7 @@ from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
 
-n_mixtures, n_runs, description = 8, 100, 'mcmc_gaussian_prior_gmmcovars'
+n_mixtures, n_runs, description = 8, 100, 'mcmc_gaussian_prior_gmmcovars_averagell'
 
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,
@@ -41,9 +41,14 @@ X = manager.get_background_data()
 
 system = mcmc_system.MCMC_ML_System(n_mixtures=n_mixtures, n_runs=n_runs)
 
-filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'ubm' + '.pickle')
+logging.info('Training background model...')
 
 system.train_background(manager.get_background_data())
+with open(os.path.join(save_dir, 'ubm.pickle'), 'wb') as fp:
+    cPickle.dump(system.ubm, fp, cPickle.HIGHEST_PROTOCOL)
+
+logging.info('Finished, saved background model to file...')
+
 """
 try:
     with open(filename) as fp:
