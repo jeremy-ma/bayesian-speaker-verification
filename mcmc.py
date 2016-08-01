@@ -14,7 +14,7 @@ from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
 
-n_mixtures, n_runs, description = 8, 20000, 'mcmc_gaussian_prior_gmmcovars'
+n_mixtures, n_runs, description = 8, 100, 'mcmc_gaussian_prior_gmmcovars'
 
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,
@@ -39,7 +39,7 @@ copyfile(src, dest)
 
 X = manager.get_background_data()
 
-system = mcmc_system.MCMC_ML_System(n_mixtures=n_mixtures, n_runs=n_runs)
+system = mcmc_system.MCMC_MAP_System(n_mixtures=n_mixtures, n_runs=n_runs)
 
 logging.info('Training background model...')
 
