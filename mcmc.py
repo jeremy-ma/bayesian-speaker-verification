@@ -73,7 +73,7 @@ prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), np.array(system.
                  CovarsStaticPrior(np.array(system.ubm.covars)),
                  WeightsStaticPrior(np.array(system.ubm.weights)))
 
-proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.05, 0.1, 0.15]),
+proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.0003, 0.001]),
                                       propose_covars=None,
                                       propose_weights=None)
 
