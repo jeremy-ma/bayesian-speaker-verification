@@ -166,9 +166,9 @@ class MCMC_MAP_System(MCSystem):
         gmm_samples = self.model_samples[claimed_speaker][burn_in::lag]
         claimed_likelihoods = []
         for gmm in gmm_samples:
-            claimed_likelihoods.append(gmm.log_likelihood(features, n_jobs) / features.shape[0])
+            claimed_likelihoods.append(gmm.log_likelihood(features, n_jobs)/ features.shape[0])
         claimed = logsumexp(np.array(claimed_likelihoods)) - np.log(len(gmm_samples))
-        background = self.ubm.log_likelihood(features, n_jobs)
+        background = self.ubm.log_likelihood(features, n_jobs) /features.shape[0]
         likelihood_ratio = claimed - background
 
         return likelihood_ratio
