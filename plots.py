@@ -63,7 +63,7 @@ def EER(fps, fns):
 
 n_mixtures = 8
 n_runs = 20000
-description = 'mcmc_gaussian_prior_gmmcovars'
+description = 'mcmc_gaussian_prior_gmmcovars_averagell'
 type = 'MHMC'
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)

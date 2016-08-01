@@ -14,7 +14,7 @@ from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
 
-n_mixtures, n_runs, description = 8, 100, 'mcmc_gaussian_prior_gmmcovars_averagell'
+n_mixtures, n_runs, description = 8, 20000, 'mcmc_gaussian_prior_gmmcovars'
 
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,

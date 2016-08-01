@@ -7,6 +7,7 @@ import cPickle
 import os
 from system.mcmc_system import MCMC_ML_System
 import logging, pdb
+from gmmmc import GMM
 
 def evaluate_system(system, manager, n_jobs, save_path):
     answer_array = []
@@ -19,7 +20,7 @@ def evaluate_system(system, manager, n_jobs, save_path):
             if count % 50 == 0:
                 print "iteration {0}".format(count)
             answer_array.append(trial.answer)
-            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data(), n_jobs, burn_in=5000, lag=50))
+            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data(), n_jobs, burn_in=10000, lag=50))
 
     #save results
     np.save(os.path.join(save_path, 'scoresMHMC.npy'), likelihood_array)
@@ -85,17 +86,18 @@ if __name__=='__main__':
                                    enrol_file=config.reddots_part4_enrol_female,
                                    trial_file=config.reddots_part4_trial_female)
 
-    n_mixtures, n_runs = 8, 5000
+    n_mixtures, n_runs = 8, 20000
     data = manager.get_background_data()
     description = 'mcmc_gaussian_prior_gmmcovars'
     save_path = os.path.join(config.dropbox_directory, config.computer_id, description,
                              'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
-    #filename = os.path.join(save_path, 'system.pickle')
+    filename = os.path.join(save_path, 'system.pickle')
 
-    #with open(filename, 'r') as fp:
-    #    system = cPickle.load(fp)
+    with open(filename, 'r') as fp:
+        system = cPickle.load(fp)
 
-    system = reduce_system(['f0002', 'f0004', 'f0005', 'f0006', 'f0008', 'f0012'], save_path)
+    #system = reduce_system(['f0002', 'f0004', 'f0005', 'f0006', 'f0008', 'f0012'], save_path)
 
     evaluate_system(system, manager, 1, save_path)
     evaluate_MCMAP(system, manager, 1, save_path)
+
