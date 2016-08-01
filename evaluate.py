@@ -5,6 +5,7 @@ from frontend import frontend
 import numpy as np
 import cPickle
 import os
+from system.mcmc_system import MCMC_ML_System
 import logging, pdb
 
 def evaluate_system(system, manager, n_jobs, save_path):
@@ -60,13 +61,24 @@ def evaluate_MCMAP(system, manager, n_jobs, save_path):
     np.save(os.path.join(save_path, 'scoresMCMAP.npy'), likelihood_array)
     np.save(os.path.join(save_path, 'answersMCMAP.npy'), answer_array)
 
-def reduce_system(system, save_path):
+def reduce_system(speaker_names, save_path):
 
-    for speaker_id, samples in system.model_samples.iteritems():
-        system.model_samples[speaker_id] = samples[::50]
+    system = MCMC_ML_System(8, 10000)
+
+    for speaker_name in speaker_names:
+        with open(os.path.join(save_path, speaker_name + '.pickle')) as fp:
+            arr = cPickle.load(fp)
+            arr = arr[::50]
+            system.model_samples[speaker_name] = arr
+
+    with open(os.path.join(save_path, 'ubm.pickle')) as fp:
+        ubm = cPickle.load(fp)
+        system.load_background(ubm)
 
     with open(os.path.join(save_path, 'reducedSystem.pickle'), 'w') as fp:
         cPickle.dump(system, fp, protocol=cPickle.HIGHEST_PROTOCOL)
+
+    return system
 
 if __name__=='__main__':
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
@@ -78,12 +90,12 @@ if __name__=='__main__':
     description = 'mcmc_gaussian_prior_gmmcovars'
     save_path = os.path.join(config.dropbox_directory, config.computer_id, description,
                              'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
-    filename = os.path.join(save_path, 'system.pickle')
+    #filename = os.path.join(save_path, 'system.pickle')
 
-    with open(filename, 'r') as fp:
-        system = cPickle.load(fp)
+    #with open(filename, 'r') as fp:
+    #    system = cPickle.load(fp)
 
-    reduce_system(system, save_path)
+    system = reduce_system(['f0002', 'f0004', 'f0005', 'f0006', 'f0008', 'f0012'], save_path)
 
     evaluate_system(system, manager, 1, save_path)
     evaluate_MCMAP(system, manager, 1, save_path)
