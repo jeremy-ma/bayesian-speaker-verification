@@ -38,7 +38,8 @@ class BobGmmSystem():
             logging.info("BobGmmSystem: Training speaker: {0}".format(speaker_id))
             print "BobGmmSystem: Training speaker: {0}".format(speaker_id)
             #print features.shape
-            self.individuals[speaker_id] = self.model.enroll_gmm(features)
+            bobgmm = self.model.enroll_gmm(features)
+            self.individuals[speaker_id] = gmmmc.GMM(bobgmm.means, bobgmm.variances, bobgmm.weights)
 
     def verify(self, claimed_speaker, features):
         """
@@ -47,7 +48,8 @@ class BobGmmSystem():
         :param features: numpy array
         :return:
         """
-        likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - self.ubm.log_likelihood(features)
+        likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) / features.shape[0] - \
+                           self.ubm.log_likelihood(features) / features.shape[0]
         #likelihood_ratio = self.individuals[claimed_speaker].log_likelihood(features) - np.sum(ubm.score(features))
 
         return likelihood_ratio
