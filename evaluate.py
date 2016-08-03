@@ -20,7 +20,7 @@ def evaluate_system(system, manager, n_jobs, save_path):
             if count % 50 == 0:
                 print "iteration {0}".format(count)
             answer_array.append(trial.answer)
-            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data(), n_jobs, burn_in=10000, lag=50))
+            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data(), n_jobs, burn_in=0, lag=1))
 
     #save results
     np.save(os.path.join(save_path, 'scoresMHMC.npy'), likelihood_array)
@@ -36,16 +36,18 @@ def evaluate_MCMAP(system, manager, n_jobs, save_path):
     for speaker_id, features in manager.get_enrolment_data().iteritems():
         print speaker_id
         samples = system.model_samples[speaker_id]
-        map = samples[0]
-        max_prob = map.log_likelihood(features)
-        for gmm in samples[1:]:
+        map_est = samples[0]
+        max_prob = map_est.log_likelihood(features)
+        max_ind = 0
+        for i, gmm in enumerate(samples):
             prob = gmm.log_likelihood(features) + system.prior.log_prob(gmm)
             if prob > max_prob:
-                map = gmm
+                map_est = gmm
                 max_prob = prob
-        newsys.individuals[speaker_id] = map
+                max_ind = i
+        print "found map at index {0}".format(max_ind)
+        newsys.individuals[speaker_id] = map_est
 
-    print "found map"
     answer_array = []
     likelihood_array = []
 
@@ -88,7 +90,7 @@ if __name__=='__main__':
 
     n_mixtures, n_runs = 8, 20000
     data = manager.get_background_data()
-    description = 'mcmc_gaussian_prior_gmmcovars'
+    description = 'mcmc_map_priors_rel10'
     save_path = os.path.join(config.dropbox_directory, config.computer_id, description,
                              'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
     filename = os.path.join(save_path, 'system.pickle')
@@ -96,8 +98,6 @@ if __name__=='__main__':
     with open(filename, 'r') as fp:
         system = cPickle.load(fp)
 
-    #system = reduce_system(['f0002', 'f0004', 'f0005', 'f0006', 'f0008', 'f0012'], save_path)
-
-    evaluate_system(system, manager, 1, save_path)
+    #evaluate_system(system, manager, 1, save_path)
     evaluate_MCMAP(system, manager, 1, save_path)
 

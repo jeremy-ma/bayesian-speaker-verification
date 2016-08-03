@@ -7,6 +7,8 @@ from gmmmc import MarkovChain
 import logging
 import matplotlib.pyplot as plt
 
+relevance_factor = 2.5# set to 4
+
 np.random.seed(2)
 logging.getLogger().setLevel(logging.INFO)
 
@@ -23,7 +25,11 @@ speaker_X = true_speaker.sample(1000)
 
 model = bob.bio.gmm.algorithm.GMM(2)
 
+model.gmm_training_iterations = 25
+model.training_threshold = 1e-5
 model.train_ubm(background_X)
+
+
 # enroll trainer because train_ubm has a bug
 model.enroll_trainer = bob.learn.em.MAP_GMMTrainer(model.ubm,
                                                    relevance_factor=model.relevance_factor,
@@ -34,7 +40,7 @@ ubm = gmmmc.GMM(np.array(model.ubm.means),
 bobgmm = model.enroll_gmm(speaker_X)
 speaker_gmm = gmmmc.GMM(np.array(bobgmm.means), np.array(bobgmm.variances), np.array(bobgmm.weights))
 
-prior = GMMPrior(MeansGaussianPrior(np.array(ubm.means), np.array(ubm.covars)/4),
+prior = GMMPrior(MeansGaussianPrior(np.array(ubm.means), np.array(ubm.covars)/relevance_factor),
                  CovarsStaticPrior(np.array(ubm.covars)),
                  WeightsStaticPrior(np.array(ubm.weights)))
 
@@ -44,7 +50,7 @@ proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(ste
 
 mcmc = MarkovChain(proposal, prior, ubm)
 
-samples = mcmc.sample(speaker_X, 1000)
+samples = mcmc.sample(speaker_X, 10000)
 
 mapest = samples[0]
 mapprob = mapest.log_likelihood(speaker_X) + prior.log_prob(mapest)
