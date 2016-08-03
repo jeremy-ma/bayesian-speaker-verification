@@ -14,7 +14,7 @@ from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
 
-n_mixtures, n_runs, description = 8, 100, 'mcmc_gaussian_prior_gmmcovars'
+n_mixtures, n_runs, description = 8, 100, 'mcmc_map_priors'
 
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,
@@ -39,7 +39,7 @@ copyfile(src, dest)
 
 X = manager.get_background_data()
 
-system = mcmc_system.MCMC_MAP_System(n_mixtures=n_mixtures, n_runs=n_runs)
+system = mcmc_system.MCMC_ML_System(n_mixtures=n_mixtures, n_runs=n_runs)
 
 logging.info('Training background model...')
 
@@ -49,31 +49,17 @@ with open(os.path.join(save_dir, 'ubm.pickle'), 'wb') as fp:
 
 logging.info('Finished, saved background model to file...')
 
-"""
-try:
-    with open(filename) as fp:
-        ubm = cPickle.load(fp)
-    system.load_background(ubm)
-    logging.info('Loaded background model from file')
-except:
-    logging.info('Training background model...')
-    system.train_background(manager.get_background_data())
-    if not os.path.exists(os.path.dirname(filename)):
-        os.makedirs(os.path.dirname(filename))
-    with open(filename, 'wb') as fp:
-        cPickle.dump(system.ubm, fp, cPickle.HIGHEST_PROTOCOL)
-    logging.info('Finished, saved background model to file...')
-"""
-
 # prior = GMMPrior(MeansUniformPrior(X.min(), X.max(), n_mixtures, X.shape[1]),
 #                 CovarsStaticPrior(np.array(system.ubm.covars_)),
 #                 WeightsStaticPrior(np.array(system.ubm.weights_)))
 
-prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), np.array(system.ubm.covars)),
+relevance_factor = 4 # same as in BOB
+
+prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), np.array(system.ubm.covars) / relevance_factor),
                  CovarsStaticPrior(np.array(system.ubm.covars)),
                  WeightsStaticPrior(np.array(system.ubm.weights)))
 
-proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.0003, 0.001]),
+proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.0005, 0.001]),
                                       propose_covars=None,
                                       propose_weights=None)
 

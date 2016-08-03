@@ -124,7 +124,7 @@ class MCMC_MAP_System(MCSystem):
     def __init__(self, n_mixtures, n_runs):
         super(MCMC_MAP_System, self).__init__(n_mixtures)
         self.n_runs = n_runs
-        self.model = BobGMM(8, gmm_enroll_iterations=5)
+        self.model = BobGMM(8, gmm_enroll_iterations=2)
 
     def train_background(self, background_features):
         self.model.train_ubm(background_features)

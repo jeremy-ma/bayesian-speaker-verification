@@ -79,6 +79,6 @@ if __name__ == '__main__':
             likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data()))
 
     #save results
-    np.save('map_scores1.npy', likelihood_array)
-    np.save('map_answers1.npy', answer_array)
+    np.save('../map_scores.npy', likelihood_array)
+    np.save('../map_answers.npy', answer_array)
 
