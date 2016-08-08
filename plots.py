@@ -58,13 +58,11 @@ def EER(fps, fns):
         if diff < min_diff:
             min_diff = diff
             min_ind = i
-    return (fps[min_ind], fns[min_ind])
-
+    return fps[min_ind]
 
 n_mixtures = 8
 n_runs = 20000
-description = 'mcmc_gaussian_prior_gmmcovars_averagell'
-type = 'MHMC'
+description = 'mcmc_map_priors_rel10'
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
@@ -80,8 +78,8 @@ scoresMHMCP = np.load(filename)
 filename = os.path.join(save_path, 'answersMCMAP.npy')
 answersMHMCP = np.load(filename)
 
-scoresMAP = np.load('map_scores2.npy')
-answersMAP = np.load('map_answers2.npy')
+scoresMAP = np.load('map_scores.npy')
+answersMAP = np.load('map_answers.npy')
 
 fps_MHMC, fns_MHMC, _ = detection_error_tradeoff(answersMHMC, scoresMHMC)
 
@@ -98,8 +96,8 @@ plt.plot(fps_MAP, fns_MAP, 'g', label='MAP')
 plt.ylabel('False Negative Rate')
 plt.xlabel('False Positive Rate')
 
-print EER(fps_MHMC, fns_MHMC)
-print EER(fps_MAP, fns_MAP)
+print "EER MHMC:{0}".format(EER(fps_MHMC, fns_MHMC))
+print "EER MAP:{0}".format(EER(fps_MAP, fns_MAP))
 
 plt.legend(loc='lower right')
 plt.plot([0, 1], [0, 1], 'r--')

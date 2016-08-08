@@ -24,7 +24,8 @@ class BobGmmSystem():
         self.model.enroll_trainer = bob.learn.em.MAP_GMMTrainer(self.model.ubm,
                                     relevance_factor = self.model.relevance_factor,
                                     update_means = True, update_variances = False)
-        self.model.gmm_enroll_iterations = 5
+        self.model.relevance_factor = 10
+        self.model.gmm_enroll_iterations = 2
         self.ubm = gmmmc.GMM(np.array(self.model.ubm.means),
                              np.array(self.model.ubm.variances),
                              np.array(self.model.ubm.weights))
