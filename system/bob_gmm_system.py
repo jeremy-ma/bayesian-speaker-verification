@@ -24,8 +24,8 @@ class BobGmmSystem():
         self.model.enroll_trainer = bob.learn.em.MAP_GMMTrainer(self.model.ubm,
                                     relevance_factor = self.model.relevance_factor,
                                     update_means = True, update_variances = False)
-        self.model.relevance_factor = 10
-        self.model.gmm_enroll_iterations = 2
+        #self.model.gmm_enroll_iterations = 1
+        #self.model.training_threshold = 1e-8
         self.ubm = gmmmc.GMM(np.array(self.model.ubm.means),
                              np.array(self.model.ubm.variances),
                              np.array(self.model.ubm.weights))
@@ -74,10 +74,12 @@ if __name__ == '__main__':
 
     answer_array = []
     likelihood_array = []
+    llset = set()
     for speaker_id, trials in manager.speaker_trials.iteritems():
         for trial in trials:
             answer_array.append(trial.answer)
-            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data()))
+            ll = system.verify(trial.claimed_speaker, trial.get_data())
+            likelihood_array.append(ll)
 
     #save results
     np.save('../map_scores.npy', likelihood_array)

@@ -9,7 +9,7 @@ from bob.bio.spear.extractor import Cepstral
 from scipy.io import wavfile
 from collections import defaultdict
 
-def process_all_and_save(data_directory, dest_directory):
+def process_all_and_save(data_directory, dest_directory, wav=False):
     """
     Preprocess all media files, perform voice activity detection and MFCC
     feature extraction. Save files to dest_directory. Expects .pcm files.
@@ -42,16 +42,21 @@ def process_all_and_save(data_directory, dest_directory):
                 if os.path.isfile(newsavefile) or os.path.getsize(input_file) < 1000:
                     print "skipping"
                     continue
-
-                # load data into memory
-                data = np.memmap(input_file, dtype='h', mode='r')
-                data = np.array(data, dtype=float)
-                input_signal = (config.data_fs, data)
-                input_data = voice_activity_detector(input_signal) # Perform voice activity detection with 'Mod_4Hz'
-                normalised_features = feature_extractor(input_data) # Perform cepstral feature extraction
+                if wav is False:
+                    # load raw data into memory
+                    data = np.memmap(input_file, dtype='h', mode='r')
+                    data = np.array(data, dtype=float)
+                    input_signal = (config.data_fs, data)
+                else:
+                    fs, data = wavfile.read(input_file)
+                    data = np.array(data, dtype=float)
+                    input_signal = (fs, data)
+                input_data = voice_activity_detector(input_signal)  # Perform voice activity detection with 'Mod_4Hz'
+                normalised_features = feature_extractor(input_data)  # Perform cepstral feature extraction
 
                 #save
                 np.save(newsavefile, normalised_features)
+
 
 class Trial():
 
@@ -66,10 +71,11 @@ class Trial():
 
 class DataManager():
 
-    def __init__(self, data_directory, enrol_file, trial_file):
+    def __init__(self, data_directory, enrol_file, trial_file, background_data_directory=None):
         self.data_directory = data_directory
         self.speaker_enrolment_files = self.parse_enrol(enrol_file)
         self.speaker_trials = self.parse_trials(trial_file)
+        self.background_data_directory = background_data_directory
 
     def parse_enrol(self, enrol_file):
         """
@@ -136,8 +142,19 @@ class DataManager():
         :return: 2d array of all enrolment data
         """
         array_list = []
-        for speaker, enrol_filelist in self.speaker_enrolment_files.iteritems():
-            array_list.append(self.get_features(enrol_filelist))
+        if self.background_data_directory is None:
+            # use all the enrolment data
+            for speaker, enrol_filelist in self.speaker_enrolment_files.iteritems():
+                array_list.append(self.get_features(enrol_filelist))
+        else:
+            # use the data directory
+            for subdir, dirs, files in os.walk(self.background_data_directory):
+                for filename in files:
+                    if filename == '.DS_Store':
+                        continue
+                    input_file = os.path.join(subdir, filename)
+                    array_list.append(np.load(input_file))
+
         return np.concatenate(array_list)
 
     def get_enrolment_data(self):
@@ -170,8 +187,9 @@ class DataManager():
         return unique_trials
 
 if __name__ == '__main__':
-    # process_all_and_save(data_directory=os.path.join(config.reddots_directory,'pcm/'), \
-    #            dest_directory=os.path.join(config.reddots_directory,'preprocessed_vad/'))
+    process_all_and_save(data_directory=os.path.join(config.background_data_directory,'female/'), \
+                         dest_directory=os.path.join(config.background_data_directory,'processed/'),
+                         wav=True)
 
     #speaker_enrol, speaker_trial = parse_trials(enrol_file=config.reddots_part4_enrol_female,
     #                                            trial_file=config.reddots_part4_trial_female)

@@ -13,8 +13,16 @@ from shutil import copyfile
 
 
 logging.getLogger().setLevel(logging.INFO)
+n_mixtures, n_runs, description = 128, 100, 'mcmc_rel150'
+gender = 'male'
+description += '_' + gender
+if gender == 'male':
+    enrolment = config.reddots_part4_enrol_male
+    trials = config.reddots_part4_trial_male
+else:
+    enrolment = config.reddots_part4_enrol_female
+    trials = config.reddots_part4_trial_female
 
-n_mixtures, n_runs, description = 8, 100, 'mcmc_map_priors'
 
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,

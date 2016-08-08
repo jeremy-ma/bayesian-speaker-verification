@@ -62,11 +62,10 @@ def EER(fps, fns):
 
 n_mixtures = 8
 n_runs = 20000
-description = 'mcmc_map_priors_rel10'
+description = 'mcmc_rel150_male'
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
-
 
 filename = os.path.join(save_path, 'scoresMHMC.npy')
 scoresMHMC = np.load(filename)
@@ -78,8 +77,20 @@ scoresMHMCP = np.load(filename)
 filename = os.path.join(save_path, 'answersMCMAP.npy')
 answersMHMCP = np.load(filename)
 
-scoresMAP = np.load('map_scores.npy')
-answersMAP = np.load('map_answers.npy')
+scoresMAP = np.load('map_scores_male.npy')
+answersMAP = np.load('map_answers_male.npy')
+
+
+# remove identical scores (due to files with just noise in them)
+scoresMAP, indices = np.unique(scoresMAP, return_index=True)
+answersMAP = answersMAP[indices]
+
+scoresMHMC, indices = np.unique(scoresMHMC, return_index=True)
+answersMHMC = answersMHMC[indices]
+
+scoresMHMCP, indices = np.unique(scoresMHMCP, return_index=True)
+answersMHMCP = answersMHMCP[indices]
+
 
 fps_MHMC, fns_MHMC, _ = detection_error_tradeoff(answersMHMC, scoresMHMC)
 

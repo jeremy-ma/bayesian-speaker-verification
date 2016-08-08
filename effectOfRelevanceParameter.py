@@ -7,7 +7,7 @@ from gmmmc import MarkovChain
 import logging
 import matplotlib.pyplot as plt
 
-relevance_factor = 2.5# set to 4
+relevance_factor = 1# set to 4
 
 np.random.seed(2)
 logging.getLogger().setLevel(logging.INFO)

@@ -85,8 +85,10 @@ def reduce_system(speaker_names, save_path):
 
 if __name__=='__main__':
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
-                                   enrol_file=config.reddots_part4_enrol_female,
-                                   trial_file=config.reddots_part4_trial_female)
+                                   enrol_file=config.reddots_part4_enrol_male,
+                                   trial_file=config.reddots_part4_trial_male)
+
+    pdb.set_trace()
 
     n_mixtures, n_runs = 8, 20000
     data = manager.get_background_data()

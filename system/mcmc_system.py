@@ -16,10 +16,9 @@ from bob.bio.gmm.algorithm import GMM as BobGMM
 import bob
 
 
-
 class MCSystem(object):
 
-    def __init__(self, n_mixtures=8):
+    def __init__(self, n_mixtures):
         self.n_mixtures = n_mixtures
         self.model_samples = {}
 
@@ -41,7 +40,6 @@ class MCSystem(object):
 
     def load_speakers(self, speaker_data):
         self.model_samples = speaker_data
-
 
 class AIS_System(MCSystem):
     def __init__(self, n_mixtures, n_runs, betas):
