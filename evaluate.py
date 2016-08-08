@@ -20,7 +20,7 @@ def evaluate_system(system, manager, n_jobs, save_path):
             if count % 50 == 0:
                 print "iteration {0}".format(count)
             answer_array.append(trial.answer)
-            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data(), n_jobs, burn_in=10000, lag=50))
+            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data(), n_jobs, burn_in=10000, lag=100))
 
     #save results
     np.save(os.path.join(save_path, 'scoresMHMC.npy'), likelihood_array)
@@ -83,12 +83,12 @@ def reduce_system(speaker_names, save_path):
 
 if __name__=='__main__':
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
-                                   enrol_file=config.reddots_part4_enrol_female,
-                                   trial_file=config.reddots_part4_trial_female)
+                                   enrol_file=config.reddots_part4_enrol_male,
+                                   trial_file=config.reddots_part4_trial_male)
 
     n_mixtures, n_runs = 8, 20000
     data = manager.get_background_data()
-    description = 'mcmc_gaussian_prior_gmmcovars'
+    description = 'mcmc_rel150_male'
     save_path = os.path.join(config.dropbox_directory, config.computer_id, description,
                              'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
     filename = os.path.join(save_path, 'system.pickle')
