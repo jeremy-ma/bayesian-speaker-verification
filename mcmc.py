@@ -13,8 +13,8 @@ from shutil import copyfile
 
 
 logging.getLogger().setLevel(logging.INFO)
-n_mixtures, n_runs, description = 128, 100, 'mcmc_rel150'
-gender = 'male'
+n_mixtures, n_runs, description = 8, 100, 'mcmc_rel150_bigubm'
+gender = 'female'
 description += '_' + gender
 if gender == 'male':
     enrolment = config.reddots_part4_enrol_male
@@ -26,7 +26,8 @@ else:
 
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,
-                               trial_file=config.reddots_part4_trial_female)
+                               trial_file=config.reddots_part4_trial_female,
+                               background_data_directory=config.background_data_directory)
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 if not os.path.exists(save_path):
@@ -44,8 +45,9 @@ if os.path.exists(dest):
     logging.info('Overwriting previous run.....')
 copyfile(src, dest)
 
-
+print "reading background data"
 X = manager.get_background_data()
+print "obtained background data"
 
 system = mcmc_system.MCMC_ML_System(n_mixtures=n_mixtures, n_runs=n_runs)
 
