@@ -1,6 +1,6 @@
 __author__ = 'jeremyma'
 import sys
-sys.path.append('/Users/jeremyma/Documents/UNSW/THESIS/ThesisPrototype')
+sys.path.append("/home/jeremy/Documents/prototype")
 import os
 import config
 import numpy as np
@@ -187,8 +187,8 @@ class DataManager():
         return unique_trials
 
 if __name__ == '__main__':
-    process_all_and_save(data_directory=os.path.join(config.background_data_directory,'female/'), \
-                         dest_directory=os.path.join(config.background_data_directory,'processed/'),
+    process_all_and_save(data_directory=os.path.join(config.background_data_directory,'male/'), \
+                         dest_directory=os.path.join(config.background_data_directory,'processed/male'),
                          wav=True)
 
     #speaker_enrol, speaker_trial = parse_trials(enrol_file=config.reddots_part4_enrol_female,
