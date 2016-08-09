@@ -150,7 +150,7 @@ class DataManager():
             # use the data directory
             for subdir, dirs, files in os.walk(self.background_data_directory):
                 for filename in files:
-                    if filename == '.DS_Store' or '.npy' not in filename:
+                    if  '.npy' not in filename:
                         continue
                     input_file = os.path.join(subdir, filename)
                     array_list.append(np.load(input_file))

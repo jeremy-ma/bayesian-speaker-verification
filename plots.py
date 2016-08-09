@@ -60,9 +60,9 @@ def EER(fps, fns):
             min_ind = i
     return fps[min_ind]
 
-n_mixtures = 8
+n_mixtures = 128
 n_runs = 20000
-description = 'mcmc_rel150_male'
+description = 'mcmc_rel150'
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
@@ -77,8 +77,8 @@ scoresMHMCP = np.load(filename)
 filename = os.path.join(save_path, 'answersMCMAP.npy')
 answersMHMCP = np.load(filename)
 
-scoresMAP = np.load('map_scores_male.npy')
-answersMAP = np.load('map_answers_male.npy')
+scoresMAP = np.load('map_scores128.npy')
+answersMAP = np.load('map_answers128.npy')
 
 
 # remove identical scores (due to files with just noise in them)
