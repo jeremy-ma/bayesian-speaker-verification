@@ -97,6 +97,6 @@ if __name__=='__main__':
     with open(filename, 'r') as fp:
         system = cPickle.load(fp)
 
-    #evaluate_system(system, manager, 1, save_path)
+    evaluate_system(system, manager, 1, save_path)
     evaluate_MCMAP(system, manager, 1, save_path)
 
