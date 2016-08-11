@@ -124,6 +124,12 @@ class MCMC_MAP_System(MCSystem):
         self.n_runs = n_runs
         self.model = BobGMM(n_mixtures, gmm_enroll_iterations=2)
 
+    def load_background(self, background):
+        self.ubm = background
+        self.model.ubm.means = background.means
+        self.model.ubm.variances = background.covars
+        self.model.ubm.weights = background.weights
+
     def train_background(self, background_features):
         self.model.train_ubm(background_features)
         self.ubm = GMM(np.array(self.model.ubm.means),

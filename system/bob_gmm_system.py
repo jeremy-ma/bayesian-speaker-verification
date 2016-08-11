@@ -59,13 +59,17 @@ if __name__ == '__main__':
 
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                    enrol_file=config.reddots_part4_enrol_female,
-                                   trial_file=config.reddots_part4_trial_female)
+                                   trial_file=config.reddots_part4_trial_female,
+                                   background_data_directory=config.background_data_directory_female)
 
     total = sum([len(trials) for _, trials in manager.speaker_trials.iteritems()])
 
     system = BobGmmSystem(num_gaussians=8)
+    system.model.relevance_factor=20
     print "training background"
-    system.train_background(manager.get_background_data())
+    back = manager.get_background_data()
+    print back.shape
+    system.train_background(back)
     print "training speaker models"
     system.train_speakers(manager.get_enrolment_data())
 
@@ -82,6 +86,5 @@ if __name__ == '__main__':
             likelihood_array.append(ll)
 
     #save results
-    np.save('../map_scores.npy', likelihood_array)
-    np.save('../map_answers.npy', answer_array)
-
+    np.save('../map_scores8_relevance20_bigubm.npy', likelihood_array)
+    np.save('../map_answers8_relevance20_bigubm.npy', answer_array)
