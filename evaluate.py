@@ -84,12 +84,11 @@ def reduce_system(speaker_names, save_path):
 
 if __name__=='__main__':
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
-                                   enrol_file=config.reddots_part4_enrol_male,
-                                   trial_file=config.reddots_part4_trial_male)
+                                   enrol_file=config.reddots_part4_enrol_female,
+                                   trial_file=config.reddots_part4_trial_female)
 
-    n_mixtures, n_runs = 8, 20000
-    data = manager.get_background_data()
-    description = 'mcmc_rel150_male'
+    n_mixtures, n_runs = 8, 50000
+    description = 'mcmc_rel150_bigubm_mapstart_female'
     save_path = os.path.join(config.dropbox_directory, config.computer_id, description,
                              'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
     filename = os.path.join(save_path, 'system.pickle')

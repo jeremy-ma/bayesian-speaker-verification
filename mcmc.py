@@ -15,9 +15,10 @@ from shutil import copyfile
 logging.getLogger().setLevel(logging.INFO)
 n_mixtures, n_runs, description = 8, 100, 'mcmc_test'
 relevance_factor = 150
-
+n_jobs = 1
 gender = 'female'
 description += '_' + gender
+
 if gender == 'male':
     enrolment = config.reddots_part4_enrol_male
     trials = config.reddots_part4_trial_male
@@ -83,7 +84,7 @@ system.set_params(proposal, prior)
 
 logging.info('Beginning Monte Carlo Sampling')
 
-system.train_speakers(manager.get_enrolment_data(), -1, save_dir)
+system.train_speakers(manager.get_enrolment_data(), n_jobs, save_dir)
 
 logging.info('Saving system to file')
 with open(os.path.join(save_dir, 'system.pickle'), 'w') as fp:
