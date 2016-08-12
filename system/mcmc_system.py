@@ -51,8 +51,7 @@ class MCMCFullSystem(MCSystem):
         self.n_runs = n_runs
 
     def train_background_samples(self, background_features, n_samples, n_jobs):
-        mc = MarkovChain(self.proposal, self.prior, self.ubm)
-        self.background_samples = mc.sample(background_features, n_samples, n_jobs)
+        self.background_samples = self.get_samples(background_features, n_jobs)
 
     def set_params(self, proposal, prior):
         self.proposal = proposal
@@ -68,6 +67,14 @@ class MCMCFullSystem(MCSystem):
         mc = MarkovChain(self.proposal, self.prior, initial_gmm)
         # make samples
         gmm_samples = mc.sample(X, n_samples=self.n_runs, n_jobs=n_jobs)
+        if self.proposal.propose_mean is not None:
+            logging.info('Means Acceptance: {0}'.format(self.proposal.propose_mean.get_acceptance()))
+
+        if self.proposal.propose_covars is not None:
+            logging.info('Covars Acceptance: {0}'.format(self.proposal.propose_covars.get_acceptance()))
+
+        if self.proposal.propose_weights is not None:
+            logging.info('Weights Acceptance: {0}'.format(self.proposal.propose_weights.get_acceptance()))
 
         return gmm_samples
 
