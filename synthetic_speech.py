@@ -129,14 +129,15 @@ def asWhole():
     logging.getLogger().setLevel(logging.INFO)
 
     system = bob_gmm_system.BobGmmSystem(n_mixtures)
-    #system.model.gmm_enroll_iterations = 25
-    #system.model.training_threshold = 1e-6
+    system.model.gmm_enroll_iterations = 25
+    system.model.training_threshold = 1e-6
+    system.model.relevance_factor = 4
     system.train_background(background_samples)
     system.model.ubm.means = background.means
     system.model.ubm.variances = background.covars
     system.model.ubm.weights = background.weights
 
-    relevance_factor = 100
+    relevance_factor = 4
 
     prior = GMMPrior(MeansGaussianPrior(np.array(background.means), np.array(background.covars) / relevance_factor),
                      CovarsStaticPrior(np.array(background.covars)),
@@ -152,7 +153,7 @@ def asWhole():
 
     print proposal.propose_mean.get_acceptance()
 
-    n_samples = 100000
+    n_samples = 50000
 
     background_str = "kl divergence to background: {0}"
     speaker_str = "kl divergence to speaker: {0}"
@@ -164,7 +165,7 @@ def asWhole():
     map_div_background = []
     map_div_speaker = []
     print "MAP results"
-    for _ in xrange(10):
+    for _ in xrange(50):
         system.train_speakers({'test': speaker_samples})
         gmm = system.individuals['test']
         back = symmetric_kl_divergence(background, gmm, n_samples)
@@ -190,16 +191,25 @@ def asWhole():
         print speaker_str.format(speak)
 
     f, axarr = plt.subplots(2)
-    axarr[0].scatter(true_background_div, 0, color='g')
-    axarr[0].scatter(map_div_background, np.ones(len(map_div_background)), color='g')
-    axarr[0].scatter(mcmc_div_background, 2 * np.ones(len(mcmc_div_background)), color='g')
-    axarr[0].set_title('Distance to Background model')
-    axarr[0].set_ylabel('0: true model, 1: map models, 2:mcmc samples')
+    f1 = axarr[0].scatter(true_background_div, 0, color='y', s=200)
+    f2 = axarr[0].scatter(map_div_background, np.ones(len(map_div_background)), color='r', s=100)
+    f3 = axarr[0].scatter(mcmc_div_background, 2 * np.ones(len(mcmc_div_background)), color='b', s=100)
+    axarr[0].set_title('KL Divergence to Background model')
+    #axarr[0].set_ylabel('0: true model, 1: map models, 2:mcmc samples')
 
-    axarr[1].scatter(map_div_speaker, np.ones(len(map_div_speaker)), color='r')
-    axarr[1].scatter(mcmc_div_speaker, 2 * np.ones(len(mcmc_div_speaker)), color='r')
-    axarr[1].set_title("Distance to true speaker model")
-    axarr[1].set_ylabel('0: true model, 1: map models, 2:mcmc samples')
+    axarr[1].scatter(map_div_speaker, np.ones(len(map_div_speaker)), color='r', s=200)
+    axarr[1].scatter(mcmc_div_speaker, 2 * np.ones(len(mcmc_div_speaker)), color='b',s=200)
+    axarr[1].set_title("KL Divergence to true speaker model")
+    #axarr[1].set_ylabel('0: true model, 1: map models, 2:mcmc samples')
+
+
+    plt.legend((f1, f2, f3),
+               ('True Speaker Model', 'MAP estimates', 'Monte Carlo Samples'),
+               scatterpoints=1,
+               loc='lower left',
+               ncol=2,
+               fontsize=15)
+
     plt.show()
 
 

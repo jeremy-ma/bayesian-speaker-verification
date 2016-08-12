@@ -46,11 +46,11 @@ filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'ubm' + '.pick
 try:
     with open(filename) as fp:
         ubm = cPickle.load(fp)
-    system.load_background(ubm)
+    system.load_ubm(ubm)
     logging.info('Loaded background model from file')
 except:
     logging.info('Training background model...')
-    system.train_background(manager.get_background_data())
+    system.train_ubm(manager.get_background_data())
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
     with open(filename, 'wb') as fp:
