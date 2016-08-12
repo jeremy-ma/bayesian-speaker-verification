@@ -13,7 +13,7 @@ from shutil import copyfile
 
 
 logging.getLogger().setLevel(logging.INFO)
-n_mixtures, n_runs, description = 8, 100, 'mcmc_rel150_bigubm'
+n_mixtures, n_runs, description = 8, 100, 'mcmc_test'
 relevance_factor = 150
 
 gender = 'female'
@@ -27,8 +27,7 @@ else:
 
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,
-                               trial_file=config.reddots_part4_trial_female,
-                               background_data_directory=config.background_data_directory_female)
+                               trial_file=config.reddots_part4_trial_female)
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 if not os.path.exists(save_path):
@@ -46,18 +45,20 @@ if os.path.exists(dest):
     logging.info('Overwriting previous run.....')
 copyfile(src, dest)
 
-system = mcmc_system.MCMC_ML_System(n_mixtures=n_mixtures, n_runs=n_runs)
+system = mcmc_system.MCMC_MAP_System(n_mixtures=n_mixtures, n_runs=n_runs)
+
+print "reading background data"
+X = manager.get_background_data()
+print "obtained background data"
 
 ubm_path = os.path.join(save_dir, 'ubm.pickle')
 try:
     with open(ubm_path) as fp:
         ubm = cPickle.load(fp)
+        system.train_background(X[:1000]) # hack to initialise the ubm
         system.load_background(ubm)
     logging.info("Loaded background model")
-except:
-    print "reading background data"
-    X = manager.get_background_data()
-    print "obtained background data"
+except IOError:
     logging.info('Training background model...')
     system.train_background(manager.get_background_data())
     with open(ubm_path, 'wb') as fp:
