@@ -44,7 +44,7 @@ system = mcmc_system.MCMC_ML_System(n_mixtures=n_mixtures, n_runs=n_runs)
 
 filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'ubm' + '.pickle')
 
-system.train_background(manager.get_background_data())
+system.train_ubm(manager.get_background_data())
 """
 try:
     with open(filename) as fp:

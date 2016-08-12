@@ -75,7 +75,7 @@ def reduce_system(speaker_names, save_path):
 
     with open(os.path.join(save_path, 'ubm.pickle')) as fp:
         ubm = cPickle.load(fp)
-        system.load_background(ubm)
+        system.load_ubm(ubm)
 
     with open(os.path.join(save_path, 'reducedSystem.pickle'), 'w') as fp:
         cPickle.dump(system, fp, protocol=cPickle.HIGHEST_PROTOCOL)

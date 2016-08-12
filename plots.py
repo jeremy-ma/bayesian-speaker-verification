@@ -60,9 +60,9 @@ def EER(fps, fns):
             min_ind = i
     return fps[min_ind]
 
-n_mixtures = 128
-n_runs = 20000
-description = 'mcmc_rel150'
+n_mixtures = 8
+n_runs = 50000
+description = 'mcmc_rel150_bigubm_female'
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
@@ -77,9 +77,11 @@ scoresMHMCP = np.load(filename)
 filename = os.path.join(save_path, 'answersMCMAP.npy')
 answersMHMCP = np.load(filename)
 
-scoresMAP = np.load('map_scores128.npy')
-answersMAP = np.load('map_answers128.npy')
+scoresMAP = np.load('map_scores8_largerelevance_bigubm.npy')
+answersMAP = np.load('map_answers8_largerelevance_bigubm.npy')
 
+scoresMAP2 = np.load('map_scores.npy')
+answersMAP2 = np.load('map_answers.npy')
 
 # remove identical scores (due to files with just noise in them)
 scoresMAP, indices = np.unique(scoresMAP, return_index=True)
@@ -92,6 +94,9 @@ scoresMHMCP, indices = np.unique(scoresMHMCP, return_index=True)
 answersMHMCP = answersMHMCP[indices]
 
 
+scoresMAP2, indices = np.unique(scoresMAP2, return_index=True)
+answersMAP2 = answersMAP2[indices]
+
 fps_MHMC, fns_MHMC, _ = detection_error_tradeoff(answersMHMC, scoresMHMC)
 
 fps_MHMCP, fns_MHMCP, _ = detection_error_tradeoff(answersMHMCP, scoresMHMCP)
@@ -101,8 +106,10 @@ fps_MAP, fns_MAP, _ = detection_error_tradeoff(answersMAP, scoresMAP)
 plt.title('Detection Error Tradeoff')
 plt.plot(fps_MHMC, fns_MHMC, 'r', label='GMM-MHMC')
 plt.plot(fps_MHMCP, fns_MHMCP, 'b', label='GMM-MHMC MAP estimate')
-
 plt.plot(fps_MAP, fns_MAP, 'g', label='MAP')
+
+fps_MAPsmall, fns_MAPsmall, _ = detection_error_tradeoff(answersMAP2, scoresMAP2)
+#plt.plot(fps_MAPsmall, fns_MAPsmall, 'y', label='MAP_small')
 
 plt.ylabel('False Negative Rate')
 plt.xlabel('False Positive Rate')

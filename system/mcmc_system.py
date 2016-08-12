@@ -22,7 +22,7 @@ class MCSystem(object):
         self.n_mixtures = n_mixtures
         self.model_samples = {}
 
-    def train_background(self, background_features):
+    def train_ubm(self, background_features):
         bobmodel = BobGMM(self.n_mixtures)
         bobmodel.train_ubm(background_features)
         self.ubm = GMM(np.array(bobmodel.ubm.means), np.array(bobmodel.ubm.variances), np.array(bobmodel.ubm.weights))
@@ -35,11 +35,60 @@ class MCSystem(object):
                 with open(os.path.join(destination_directory, str(speaker_id) + '.pickle'), 'w') as fp:
                     cPickle.dump(self.model_samples[speaker_id], fp, cPickle.HIGHEST_PROTOCOL)
 
-    def load_background(self, background):
-        self.ubm = background
+    def load_ubm(self, ubm):
+        self.ubm = ubm
 
     def load_speakers(self, speaker_data):
         self.model_samples = speaker_data
+
+    def get_samples(self, features, n_jobs):
+        raise NotImplementedError('get_samples must be implemented by Subclass')
+
+class MCMCFullSystem(MCSystem):
+
+    def __init__(self, n_mixtures, n_runs):
+        super(MCMCFullSystem, self).__init__(n_mixtures)
+        self.n_runs = n_runs
+
+    def train_background_samples(self, background_features, n_samples, n_jobs):
+        mc = MarkovChain(self.proposal, self.prior, self.ubm)
+        self.background_samples = mc.sample(background_features, n_samples, n_jobs)
+
+    def set_params(self, proposal, prior):
+        self.proposal = proposal
+        self.prior = prior
+
+    def get_samples(self, X, n_jobs):
+        """
+        GMM monte carlo
+        :param X:
+        :return: monte carlo samples
+        """
+        initial_gmm = GMM(means=self.ubm.means, covariances=self.ubm.covars, weights=self.ubm.weights)
+        mc = MarkovChain(self.proposal, self.prior, initial_gmm)
+        # make samples
+        gmm_samples = mc.sample(X, n_samples=self.n_runs, n_jobs=n_jobs)
+
+        return gmm_samples
+
+    def verify(self, claimed_speaker, features, n_jobs, burn_in=0, lag=50):
+        gmm_samples = self.model_samples[claimed_speaker][burn_in::lag]
+        claimed_likelihoods = []
+        # use average log likelihood
+        for gmm in gmm_samples:
+            claimed_likelihoods.append(gmm.log_likelihood(features, n_jobs) / features.shape[0])
+        claimed = logsumexp(np.array(claimed_likelihoods)) - np.log(len(gmm_samples))
+        background_likelihoods = []
+        for gmm in self.background_samples[burn_in::lag]:
+            background_likelihoods.append(gmm.log_likelihood(features, n_jobs) / features.shape[0])
+        background = logsumexp(np.array(background_likelihoods)) - np.log(len(self.background_samples))
+        likelihood_ratio = claimed - background
+
+        return likelihood_ratio
+
+    def load_background_samples(self, background_samples):
+        self.background_samples = background_samples
+
 
 class AIS_System(MCSystem):
     def __init__(self, n_mixtures, n_runs, betas):
@@ -124,13 +173,13 @@ class MCMC_MAP_System(MCSystem):
         self.n_runs = n_runs
         self.model = BobGMM(n_mixtures, gmm_enroll_iterations=2)
 
-    def load_background(self, background):
-        self.ubm = background
-        self.model.ubm.means = background.means
-        self.model.ubm.variances = background.covars
-        self.model.ubm.weights = background.weights
+    def load_ubm(self, ubm):
+        self.ubm = ubm
+        self.model.ubm.means = ubm.means
+        self.model.ubm.variances = ubm.covars
+        self.model.ubm.weights = ubm.weights
 
-    def train_background(self, background_features):
+    def train_ubm(self, background_features):
         self.model.train_ubm(background_features)
         self.ubm = GMM(np.array(self.model.ubm.means),
                        np.array(self.model.ubm.variances),
