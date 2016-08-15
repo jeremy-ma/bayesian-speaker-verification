@@ -11,9 +11,22 @@ from gmmmc import MarkovChain
 import sys
 from shutil import copyfile
 
-logging.getLogger().setLevel(logging.INFO)
 
-n_mixtures, n_runs, description = 8, 100, 'ais_gaussian_priors'
+logging.getLogger().setLevel(logging.INFO)
+n_mixtures, n_runs, description = 8, 1, 'ais_rel150'
+relevance_factor = 150
+n_jobs = 1
+gender = 'female'
+description += '_' + gender
+betas = np.concatenate(([0], np.logspace(-3,0,100)))
+
+if gender == 'male':
+    enrolment = config.reddots_part4_enrol_male
+    trials = config.reddots_part4_trial_male
+else:
+    enrolment = config.reddots_part4_enrol_female
+    trials = config.reddots_part4_trial_female
+
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,
                                trial_file=config.reddots_part4_trial_female)
@@ -29,57 +42,45 @@ if not os.path.exists(save_dir):
 logging.info('Saving script..')
 src = __file__
 dest = os.path.join(save_dir, 'script.py')
+
 if os.path.exists(dest):
     logging.info('Overwriting previous run.....')
 copyfile(src, dest)
 
-
-X = manager.get_background_data()
-
-betas = [0.0]
-betas.extend(np.logspace(-2, 0, 200))
 system = mcmc_system.AIS_System(n_mixtures, n_runs, betas)
-filename = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'ubm' + '.pickle')
 
-########################## background ###################################################
+print "reading background data"
+X = manager.get_background_data()
+print "obtained background data"
 
+ubm_path = os.path.join(save_dir, 'ubm.pickle')
 try:
-    with open(filename) as fp:
+    with open(ubm_path) as fp:
         ubm = cPickle.load(fp)
-    system.load_ubm(ubm)
-    logging.info('Loaded background model from file')
-except:
+        system.train_ubm(X[:1000]) # hack to initialise the ubm
+        system.load_ubm(ubm)
+    logging.info("Loaded background model")
+except IOError:
     logging.info('Training background model...')
     system.train_ubm(manager.get_background_data())
-    if not os.path.exists(os.path.dirname(filename)):
-        os.makedirs(os.path.dirname(filename))
-    with open(filename, 'wb') as fp:
+    with open(ubm_path, 'wb') as fp:
         cPickle.dump(system.ubm, fp, cPickle.HIGHEST_PROTOCOL)
     logging.info('Finished, saved background model to file...')
 
-
-###########################################################################################
-
-# prior = GMMPrior(MeansUniformPrior(X.min(), X.max(), n_mixtures, X.shape[1]),
-#                 CovarsStaticPrior(np.array(system.ubm.covars_)),
-#                 WeightsStaticPrior(np.array(system.ubm.weights_)))
-
-prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), np.ones((n_mixtures, X.shape[1]))),
-                 CovarsStaticPrior(np.array(system.ubm.variances)),
+prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), np.array(system.ubm.covars) / relevance_factor),
+                 CovarsStaticPrior(np.array(system.ubm.covars)),
                  WeightsStaticPrior(np.array(system.ubm.weights)))
 
-proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.005, 0.01, 0.1]),
+proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.0002, 0.001]),
                                       propose_covars=None,
-                                      propose_weights=None,
-                                      propose_iterations=10)
+                                      propose_weights=None)
 
 system.set_params(proposal, prior)
 
 logging.info('Beginning Monte Carlo Sampling')
 
-system.train_speakers(manager.get_enrolment_data(), -1, save_dir)
+system.train_speakers(manager.get_enrolment_data(), n_jobs, save_dir)
 
 logging.info('Saving system to file')
 with open(os.path.join(save_dir, 'system.pickle'), 'w') as fp:
     cPickle.dump(system, fp, cPickle.HIGHEST_PROTOCOL)
-

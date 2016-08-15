@@ -41,13 +41,12 @@ def evaluate_MCMAP(system, manager, n_jobs, save_path):
         for i, gmm in enumerate(samples):
             prob = gmm.log_likelihood(features) + system.prior.log_prob(gmm)
             if prob > max_prob:
+                print "found new map at {0}!".format(i)
                 map_est = gmm
                 max_prob = prob
                 max_ind = i
         print "found map at index {0}".format(max_ind)
         newsys.individuals[speaker_id] = map_est
-
-        print max_prob, max_ind
 
     answer_array = []
     likelihood_array = []
@@ -80,5 +79,5 @@ if __name__=='__main__':
         system = cPickle.load(fp)
 
     #evaluate_system(system, manager, 1, save_path)
-    evaluate_MCMAP(system, manager, 1, save_path)
+    evaluate_MCMAP(system, manager, -1, save_path)
 
