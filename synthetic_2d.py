@@ -67,7 +67,7 @@ final = samples[-1]
 
 mc_means = [[s.means[0][0], s.means[1][0]] for s in samples[::10]]
 mc_means = np.array(mc_means)
-"""
+
 mcmc = plt.scatter(mc_means[:,0], mc_means[:,1], color= 'b')
 map = plt.scatter(speaker_gmm.means[0][0], speaker_gmm.means[1][0], color='r', s=500.0)
 
@@ -83,6 +83,7 @@ plt.legend((map, mcmc, prior, true),
            loc='lower left',
            ncol=2,
            fontsize=22)
+
 """
 x = np.linspace(-1, 1, 1000)
 import matplotlib.mlab as mlab
@@ -90,3 +91,4 @@ import matplotlib.mlab as mlab
 for s in mc_means[700:710]:
     plt.plot(x,mlab.normpdf(x, s[0], 0.01) + mlab.normpdf(x, s[1], 0.01))
     plt.show()
+"""

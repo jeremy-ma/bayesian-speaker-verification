@@ -58,8 +58,8 @@ class BobGmmSystem():
 if __name__ == '__main__':
 
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
-                                   enrol_file=config.reddots_part4_enrol_male,
-                                   trial_file=config.reddots_part4_trial_male)
+                                   enrol_file=config.reddots_part4_enrol_female,
+                                   trial_file=config.reddots_part4_trial_female)
 
     total = sum([len(trials) for _, trials in manager.speaker_trials.iteritems()])
 
@@ -85,5 +85,5 @@ if __name__ == '__main__':
             likelihood_array.append(ll)
 
     #save results
-    np.save('../map_scores_male_relevance150.npy', likelihood_array)
-    np.save('../map_answers_male_relevance150.npy', answer_array)
+    np.save('../map_scores8_relevance150.npy', likelihood_array)
+    np.save('../map_answers8_relevance150.npy', answer_array)

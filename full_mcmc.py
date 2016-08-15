@@ -13,7 +13,7 @@ from shutil import copyfile
 
 
 logging.getLogger().setLevel(logging.INFO)
-n_mixtures, n_runs, description = 8, 100, 'full_rel150'
+n_mixtures, n_runs, description = 8, 100, 'full_uniform'
 relevance_factor = 150
 n_jobs = -1
 gender = 'female'
@@ -64,7 +64,7 @@ except IOError:
         cPickle.dump(system.ubm, fp, cPickle.HIGHEST_PROTOCOL)
     logging.info('Finished, saved background model to file...')
 
-prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), np.array(system.ubm.covars) / relevance_factor),
+prior = GMMPrior(MeansUniformPrior(X.min(), X.max(), system.n_mixtures, X.shape[1]),
                  CovarsStaticPrior(np.array(system.ubm.covars)),
                  WeightsStaticPrior(np.array(system.ubm.weights)))
 

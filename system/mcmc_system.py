@@ -220,7 +220,8 @@ class MCMC_MAP_System(MCSystem):
         if self.proposal.propose_weights is not None:
             logging.info('Weights Acceptance: {0}'.format(self.proposal.propose_weights.get_acceptance()))
 
-        return gmm_samples
+        all_samples = [initial_gmm].extend(gmm_samples)
+        return all_samples
 
     def verify(self, claimed_speaker, features, n_jobs, burn_in=0, lag=50):
         gmm_samples = self.model_samples[claimed_speaker][burn_in::lag]

@@ -20,7 +20,7 @@ def evaluate_system(system, manager, n_jobs, save_path):
             if count % 50 == 0:
                 print "iteration {0}".format(count)
             answer_array.append(trial.answer)
-            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data(), n_jobs, burn_in=10000, lag=100))
+            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data(), n_jobs, burn_in=0, lag=10))
     #save results
     np.save(os.path.join(save_path, 'scoresMHMC.npy'), likelihood_array)
 
@@ -47,6 +47,8 @@ def evaluate_MCMAP(system, manager, n_jobs, save_path):
         print "found map at index {0}".format(max_ind)
         newsys.individuals[speaker_id] = map_est
 
+        print max_prob, max_ind
+
     answer_array = []
     likelihood_array = []
 
@@ -63,25 +65,6 @@ def evaluate_MCMAP(system, manager, n_jobs, save_path):
     np.save(os.path.join(save_path, 'scoresMCMAP.npy'), likelihood_array)
     np.save(os.path.join(save_path, 'answersMCMAP.npy'), answer_array)
 
-def reduce_system(speaker_names, save_path):
-
-    system = MCMC_ML_System(8, 10000)
-
-    for speaker_name in speaker_names:
-        with open(os.path.join(save_path, speaker_name + '.pickle')) as fp:
-            arr = cPickle.load(fp)
-            arr = arr[::50]
-            system.model_samples[speaker_name] = arr
-
-    with open(os.path.join(save_path, 'ubm.pickle')) as fp:
-        ubm = cPickle.load(fp)
-        system.load_ubm(ubm)
-
-    with open(os.path.join(save_path, 'reducedSystem.pickle'), 'w') as fp:
-        cPickle.dump(system, fp, protocol=cPickle.HIGHEST_PROTOCOL)
-
-    return system
-
 if __name__=='__main__':
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                    enrol_file=config.reddots_part4_enrol_female,
@@ -96,6 +79,6 @@ if __name__=='__main__':
     with open(filename, 'r') as fp:
         system = cPickle.load(fp)
 
-    evaluate_system(system, manager, 1, save_path)
+    #evaluate_system(system, manager, 1, save_path)
     evaluate_MCMAP(system, manager, 1, save_path)
 

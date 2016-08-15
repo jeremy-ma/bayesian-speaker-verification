@@ -62,7 +62,7 @@ def EER(fps, fns):
 
 n_mixtures = 8
 n_runs = 50000
-description = 'mcmc_rel150_bigubm_female'
+description = 'mcmc_rel150_bigubm_mapstart_female'
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
