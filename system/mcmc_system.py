@@ -125,11 +125,11 @@ class AIS_System(MCSystem):
     def verify(self, claimed_speaker, features, n_jobs):
         ais_samples = self.model_samples[claimed_speaker]
         n_samples = features.shape[0]
-        numerator = logsumexp([logweight + gmm.log_likelihood(features, n_jobs)
+        numerator = logsumexp([logweight + gmm.log_likelihood(features, n_jobs) / n_samples
                                for gmm, logweight in ais_samples])
         denominator = logsumexp([logweight for _, logweight in ais_samples])
         claimed = numerator - denominator
-        background = self.ubm.log_likelihood(features, n_jobs)
+        background = self.ubm.log_likelihood(features, n_jobs) / n_samples
         likelihood_ratio = claimed - background
 
         return likelihood_ratio
