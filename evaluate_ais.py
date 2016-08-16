@@ -41,5 +41,8 @@ if __name__=='__main__':
     with open(filename, 'r') as fp:
         system = cPickle.load(fp)
 
+    for speaker, samples in system.model_samples.iteritems():
+        system.model_samples[speaker] = samples[:100]
+
     evaluate_system(system, manager, 1, save_path)
 
