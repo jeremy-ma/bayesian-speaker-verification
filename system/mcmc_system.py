@@ -177,10 +177,11 @@ class MCMC_ML_System(MCSystem):
         return likelihood_ratio
 
 class MCMC_MAP_System(MCSystem):
-    def __init__(self, n_mixtures, n_runs):
+    def __init__(self, n_mixtures, n_runs, relevance_factor):
         super(MCMC_MAP_System, self).__init__(n_mixtures)
         self.n_runs = n_runs
-        self.model = BobGMM(n_mixtures, gmm_enroll_iterations=2)
+        self.model = BobGMM(n_mixtures)
+        self.model.relevance_factor = relevance_factor
 
     def load_ubm(self, ubm):
         self.ubm = ubm
