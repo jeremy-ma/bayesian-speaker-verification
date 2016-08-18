@@ -20,7 +20,8 @@ def evaluate_system(system, manager, n_jobs, save_path):
             if count % 50 == 0:
                 print "iteration {0}".format(count)
             answer_array.append(trial.answer)
-            likelihood_array.append(system.verify(trial.claimed_speaker, trial.get_data(), n_jobs, burn_in=0, lag=10))
+            likelihood_array.append(system.verify(trial.claimed_speaker,
+                        trial.get_data(), n_jobs, burn_in=25000, lag=50))
     #save results
     np.save(os.path.join(save_path, 'scoresMHMC.npy'), likelihood_array)
 
@@ -68,9 +69,9 @@ if __name__=='__main__':
     manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                    enrol_file=config.reddots_part4_enrol_female,
                                    trial_file=config.reddots_part4_trial_female)
-
+    n_jobs = -1
     n_mixtures, n_runs = 8, 50000
-    description = 'mcmc_rel150_bigubm_mapstart_female'
+    description = 'mcmc_rel150_mapstart_female'
     save_path = os.path.join(config.dropbox_directory, config.computer_id, description,
                              'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
     filename = os.path.join(save_path, 'system.pickle')
@@ -78,6 +79,6 @@ if __name__=='__main__':
     with open(filename, 'r') as fp:
         system = cPickle.load(fp)
 
-    #evaluate_system(system, manager, 1, save_path)
-    evaluate_MCMAP(system, manager, -1, save_path)
+    evaluate_system(system, manager, n_jobs, save_path)
+    evaluate_MCMAP(system, manager, n_jobs, save_path)
 

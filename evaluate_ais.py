@@ -33,7 +33,8 @@ if __name__=='__main__':
                                    trial_file=config.reddots_part4_trial_female)
 
     n_mixtures, n_runs = 8, 1000
-    description = 'ais_rel150_female'
+    description = 'ais_rel200_female'
+    n_jobs = -1
     save_path = os.path.join(config.dropbox_directory, config.computer_id, description,
                              'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
     filename = os.path.join(save_path, 'system.pickle')
@@ -41,8 +42,8 @@ if __name__=='__main__':
     with open(filename, 'r') as fp:
         system = cPickle.load(fp)
 
-    for speaker, samples in system.model_samples.iteritems():
-        system.model_samples[speaker] = samples[:100]
+    #for speaker, samples in system.model_samples.iteritems():
+    #    system.model_samples[speaker] = samples[:100]
 
-    evaluate_system(system, manager, 1, save_path)
+    evaluate_system(system, manager, n_jobs, save_path)
 
