@@ -19,9 +19,10 @@ import multiprocessing
 import copy
 import bob
 from system.full_system import PairwiseSystem
+from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
-n_mixtures, n_runs, description = 8, 10, 'pairwise_test'
+n_mixtures, n_runs, description = 8, 100, 'pairwise_test'
 relevance_factor = 150
 n_procs = 4
 n_jobs = 1
@@ -45,8 +46,16 @@ if not os.path.exists(save_path):
 
 save_dir = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs),
                         "samples")
+
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
+
+logging.info('Saving script..')
+src = __file__
+dest = os.path.join(save_dir, 'script.py')
+copyfile(src, dest)
+
+
 
 system = PairwiseSystem(n_mixtures, n_runs)
 

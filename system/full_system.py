@@ -49,9 +49,10 @@ def multithreaded_get_samples(params):
     path = os.path.join(destination_directory, str(trial.actual_speaker), base + '.pickle')
     if not os.path.exists(os.path.dirname(path)):
         try:
-            os.makedirs(path)
+            os.makedirs(os.path.dirname(path))
         except OSError:
             if not os.path.isdir(path):
+                print "whoops!"
                 raise
 
     with open(path, 'w') as fp:

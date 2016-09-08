@@ -42,10 +42,10 @@ if not os.path.exists(save_dir):
 logging.info('Saving script..')
 src = __file__
 dest = os.path.join(save_dir, 'script.py')
+copyfile(src, dest)
 
 if os.path.exists(dest):
     logging.info('Overwriting previous run.....')
-copyfile(src, dest)
 
 system = mcmc_system.MCMC_MAP_System(n_mixtures=n_mixtures, n_runs=n_runs)
 
