@@ -3,7 +3,7 @@ import numpy as np
 import bob.bio.gmm
 from gmmmc.priors import MeansUniformPrior, CovarsStaticPrior, WeightsStaticPrior, GMMPrior, MeansGaussianPrior
 from gmmmc.proposals import GMMBlockMetropolisProposal, GaussianStepCovarProposal, GaussianStepWeightsProposal, GaussianStepMeansProposal
-from gmmmc import MarkovChain
+from gmmmc import MarkovChain, AnnealedImportanceSampling
 import logging
 import matplotlib.pyplot as plt
 
@@ -44,16 +44,18 @@ prior = GMMPrior(MeansGaussianPrior(ubm.means, ubm.covars/2),
                  CovarsStaticPrior(np.array(ubm.covars)),
                  WeightsStaticPrior(np.array(ubm.weights)))
 
-proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.0003, 0.001]),
+proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.01, 0.1]),
                                       propose_covars=None,
                                       propose_weights=None)
 
 
-mcmc = MarkovChain(proposal, prior, ubm)
+#mcmc = MarkovChain(proposal, prior, ubm)
+betas = np.concatenate(([0], np.logspace(-3,0,300)))
+ais = AnnealedImportanceSampling(proposal, prior, betas)
 
-samples = mcmc.sample(speaker_X, 10000)
+samples = ais.sample(speaker_X, 100)
 print proposal.propose_mean.get_acceptance()
-
+"""
 mapest = samples[0]
 mapprob = mapest.log_likelihood(speaker_X) + prior.log_prob(mapest)
 for sample in samples:
@@ -61,11 +63,11 @@ for sample in samples:
     if prob > mapprob:
         mapprob = prob
         mapest = sample
-
+"""
 
 final = samples[-1]
 
-mc_means = [[s.means[0][0], s.means[1][0]] for s in samples[::10]]
+mc_means = [[s.means[0][0], s.means[1][0]] for s,_ in samples]
 mc_means = np.array(mc_means)
 
 mcmc = plt.scatter(mc_means[:,0], mc_means[:,1], color= 'b')
@@ -83,6 +85,7 @@ plt.legend((map, mcmc, prior, true),
            loc='lower left',
            ncol=2,
            fontsize=22)
+plt.show()
 
 """
 x = np.linspace(-1, 1, 1000)

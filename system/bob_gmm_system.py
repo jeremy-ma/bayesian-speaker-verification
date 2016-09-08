@@ -57,33 +57,62 @@ class BobGmmSystem():
 
 if __name__ == '__main__':
 
-    manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
-                                   enrol_file=config.reddots_part4_enrol_female,
-                                   trial_file=config.reddots_part4_trial_female)
+    n_mixtures = 8
 
-    total = sum([len(trials) for _, trials in manager.speaker_trials.iteritems()])
+    relevance_factor = 150
+    ubm_size = 'smallubm'
+    gender = 'female'
 
-    system = BobGmmSystem(num_gaussians=8)
-    system.model.relevance_factor=150
-    print "training background"
+    if gender == 'male':
+        enrolment = config.reddots_part4_enrol_male
+        trials = config.reddots_part4_trial_male
+        background = config.background_data_directory_male
+    else:
+        enrolment = config.reddots_part4_enrol_female
+        trials = config.reddots_part4_trial_female
+        background = config.background_data_directory_female
+
+    if ubm_size == 'smallubm':
+        manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
+                                       enrol_file=enrolment,
+                                       trial_file=trials)
+    else:
+        manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
+                                       enrol_file=enrolment,
+                                       trial_file=trials,
+                                       background_data_directory=background)
+
+    # total = sum([len(trials) for _, trials in manager.speaker_trials.iteritems()])
+
+
     back = manager.get_background_data()
     print back.shape
-    system.train_background(back)
-    print "training speaker models"
-    system.train_speakers(manager.get_enrolment_data())
+    for relevance_factor in [4, 10, 20, 50, 100, 150, 200, 250]:
+        system = BobGmmSystem(num_gaussians=n_mixtures)
+        print "training background"
+        system.train_background(back)
+        print "training speaker models"
 
-    numCorrect = 0
-    numTrues = 0
+        system.model.relevance_factor=relevance_factor
 
-    answer_array = []
-    likelihood_array = []
-    llset = set()
-    for speaker_id, trials in manager.speaker_trials.iteritems():
-        for trial in trials:
-            answer_array.append(trial.answer)
-            ll = system.verify(trial.claimed_speaker, trial.get_data())
-            likelihood_array.append(ll)
+        system.train_speakers(manager.get_enrolment_data())
 
-    #save results
-    np.save('../map_scores8_relevance150.npy', likelihood_array)
-    np.save('../map_answers8_relevance150.npy', answer_array)
+        numCorrect = 0
+        numTrues = 0
+
+        answer_array = []
+        likelihood_array = []
+        llset = set()
+        for speaker_id, trials in manager.speaker_trials.iteritems():
+            for trial in trials:
+                answer_array.append(trial.answer)
+                ll = system.verify(trial.claimed_speaker, trial.get_data())
+                likelihood_array.append(ll)
+
+        #save results
+
+        np.save('../gmm_ubm_results/map_scores' + str(n_mixtures) + '_{0}'.format(gender) +
+                '_rel' + str(relevance_factor) + '_' + ubm_size + '.npy',
+                likelihood_array)
+        np.save('../gmm_ubm_results/map_answers' + str(n_mixtures) + '_{0}'.format(gender) +
+                '_rel' + str(relevance_factor) + '_' + ubm_size + '.npy', answer_array)

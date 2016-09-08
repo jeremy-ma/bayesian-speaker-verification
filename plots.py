@@ -60,63 +60,67 @@ def EER(fps, fns):
             min_ind = i
     return fps[min_ind]
 
-n_mixtures = 8
-n_runs = 50000
-description = 'mcmc_rel150_bigubm_mapstart_female'
+def plot_curves(file_list):
 
-save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
-save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
+    colour_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+    print file_list
+    for i, (scores_name, answers_name, algo) in enumerate(file_list):
+        # remove identical scores (due to files with just noise in them)
+        scores, answers = np.load(scores_name), np.load(answers_name)
+        print scores
+        scores, indices = np.unique(scores, return_index=True)
+        answers = answers[indices]
+        fps, fns, _ = detection_error_tradeoff(answers, scores)
+        eer = EER(fps, fns)
+        label = "{0} (EER:{1})".format(algo, eer)
+        plt.plot(fps, fns, colour_list[i], label=label)
 
-filename = os.path.join(save_path, 'scoresMHMC.npy')
-scoresMHMC = np.load(filename)
-filename = os.path.join(save_path, 'answersMHMC.npy')
-answersMHMC = np.load(filename)
+    plt.legend(loc='upper right')
+    plt.plot([0, 1], [0, 1], 'r--')
+    plt.show()
 
-filename = os.path.join(save_path, 'scoresMCMAP.npy')
-scoresMHMCP = np.load(filename)
-filename = os.path.join(save_path, 'answersMCMAP.npy')
-answersMHMCP = np.load(filename)
+def plot_regular():
+    n_mixtures = 8
+    n_runs = 1000
+    gender = 'female'
+    description = 'UBM/GMM' + '_' + gender
 
-scoresMAP = np.load('map_scores8_largerelevance_bigubm.npy')
-answersMAP = np.load('map_answers8_largerelevance_bigubm.npy')
+    save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
+    save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
+    plotstuff = []
 
-scoresMAP2 = np.load('map_scores.npy')
-answersMAP2 = np.load('map_answers.npy')
+    for rel in [ 10, 20, 50, 100, 150, 200, 250]:
 
-# remove identical scores (due to files with just noise in them)
-scoresMAP, indices = np.unique(scoresMAP, return_index=True)
-answersMAP = answersMAP[indices]
+        regular_scores = os.path.join('gmm_ubm_results', 'map_scores8_female_rel{0}_smallubm.npy'.format(rel))
+        regular_answers = os.path.join('gmm_ubm_results', 'map_answers8_female_rel{0}_smallubm.npy'.format(rel))
+        plotstuff.append((regular_scores, regular_answers, 'GMM/UBM rel{0}'.format(rel)))
 
-scoresMHMC, indices = np.unique(scoresMHMC, return_index=True)
-answersMHMC = answersMHMC[indices]
+    plt.title('Det Curve:' + description + '/n_mixtures{0}'.format(n_mixtures) + '/n_runs{0}'.format(n_runs),
+              fontsize=22)
 
-scoresMHMCP, indices = np.unique(scoresMHMCP, return_index=True)
-answersMHMCP = answersMHMCP[indices]
+    plot_curves(plotstuff)
 
 
-scoresMAP2, indices = np.unique(scoresMAP2, return_index=True)
-answersMAP2 = answersMAP2[indices]
+if __name__ == '__main__':
+    #plot_regular()
 
-fps_MHMC, fns_MHMC, _ = detection_error_tradeoff(answersMHMC, scoresMHMC)
+    n_mixtures = 8
+    n_runs = 50000
+    gender = 'female'
+    description = 'mcmc_rel150' + '_mapstart' + '_' + 'bigubm' '_' + gender
 
-fps_MHMCP, fns_MHMCP, _ = detection_error_tradeoff(answersMHMCP, scoresMHMCP)
+    save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
+    save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
 
-fps_MAP, fns_MAP, _ = detection_error_tradeoff(answersMAP, scoresMAP)
+    regular_scores = os.path.join('gmm_ubm_results', 'map_scores8_relevance150.npy')
+    regular_answers = os.path.join('gmm_ubm_results', 'map_answers8_relevance150.npy')
 
-plt.title('Detection Error Tradeoff')
-plt.plot(fps_MHMC, fns_MHMC, 'r', label='GMM-MHMC')
-plt.plot(fps_MHMCP, fns_MHMCP, 'b', label='GMM-MHMC MAP estimate')
-plt.plot(fps_MAP, fns_MAP, 'g', label='MAP')
+    plotstuff = [
+        (regular_scores, regular_answers, 'GMM/UBM'),
+        (os.path.join(save_path, 'scoresMHMC.npy'), os.path.join(save_path, 'answersMHMC.npy'), 'MC GMM/UBM'),
+        (os.path.join(save_path, 'scoresMCMAP.npy'), os.path.join(save_path, 'answersMCMAP.npy'), 'MC MAP GMM/UBM')
+    ]
+    plt.title('Det Curve:' + description + '/n_mixtures{0}'.format(n_mixtures) + '/n_runs{0}'.format(n_runs),
+              fontsize=22)
 
-fps_MAPsmall, fns_MAPsmall, _ = detection_error_tradeoff(answersMAP2, scoresMAP2)
-#plt.plot(fps_MAPsmall, fns_MAPsmall, 'y', label='MAP_small')
-
-plt.ylabel('False Negative Rate')
-plt.xlabel('False Positive Rate')
-
-print "EER MHMC:{0}".format(EER(fps_MHMC, fns_MHMC))
-print "EER MAP:{0}".format(EER(fps_MAP, fns_MAP))
-
-plt.legend(loc='lower right')
-plt.plot([0, 1], [0, 1], 'r--')
-plt.show()
+    plot_curves(plotstuff)
