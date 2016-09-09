@@ -59,7 +59,7 @@ def multithreaded_get_samples(params):
         cPickle.dump(get_samples(ubm, prior, proposal, features, n_jobs, n_runs),
                      fp, cPickle.HIGHEST_PROTOCOL)
 
-class PairwiseSystem(object):
+class KLDivergenceMLStartSystem(object):
 
     def __init__(self, n_mixtures, n_runs):
         self.n_mixtures = n_mixtures
@@ -75,7 +75,12 @@ class PairwiseSystem(object):
         self.ubm = GMM(np.array(bobmodel.ubm.means), np.array(bobmodel.ubm.variances),
                        np.array(bobmodel.ubm.weights))
 
-    def train_speakers(self, speaker_data, n_procs, n_jobs, destination_directory):
+    def sample_background(self, background_features, n_jobs, destination_directory):
+        path = os.path.join(destination_directory, 'background.pickle')
+        with open(path, 'w') as fp:
+            cPickle.dump(get_samples(self.ubm, self.prior, self.proposal, background_features, n_jobs, self.n_runs), fp)
+
+    def sample_speakers(self, speaker_data, n_procs, n_jobs, destination_directory):
         for speaker_id, features in speaker_data.iteritems():
             logging.info('Sampling Speaker:{0}'.format(str(speaker_id)))
             path = os.path.join(destination_directory, str(speaker_id), 'speaker' + '.pickle')
@@ -85,7 +90,7 @@ class PairwiseSystem(object):
                 cPickle.dump(get_samples(self.ubm, self.prior, self.proposal, features, n_jobs, self.n_runs),
                              fp, cPickle.HIGHEST_PROTOCOL)
 
-    def train_trials(self, unique_trials, n_procs, n_jobs, destination_directory):
+    def sample_trials(self, unique_trials, n_procs, n_jobs, destination_directory):
         all_trials = []
         for speaker_id, trials in unique_trials.iteritems():
             for trial in trials:
@@ -107,6 +112,47 @@ class PairwiseSystem(object):
     def load_ubm(self, ubm):
         self.ubm = ubm
 
+    def evaluate_forward(self, all_trials, speaker_data, background_data, n_jobs, samples_directory):
+        #evaluate using speaker/background posterior samples
+        with open(os.path.join(samples_directory, 'background.pickle')) as fp:
+            background_samples = cPickle.load(fp)
+
+        numer_background = np.sum(
+            [gmm.log_likelihood(background_data, n_jobs) + self.prior.log_prob(gmm) for gmm in background_samples])
+
+        scores = []
+        truth = []
+
+        for speaker_id, trials in all_trials.iteritems():
+            speaker_path = os.path.join(samples_directory, str(speaker_id), 'speaker' + '.pickle')
+
+            with open(speaker_path) as fp:
+                speaker_samples = cPickle.load(fp)
+
+            numer_speaker = np.sum([gmm.log_likelihood(speaker_data[speaker_id], n_jobs) + self.prior.log_prob(gmm)
+                                    for gmm in speaker_samples])
+
+            for trial in trials:
+                trial_data = np.load(trial.feature_file)
+                denom_speaker = np.sum([gmm.log_likelihood(trial_data, n_jobs) + self.prior.log_prob(gmm)
+                                        for gmm in speaker_samples])
+                kl_speaker = (numer_speaker - denom_speaker) / len(speaker_samples)
+                denom_background = np.sum([gmm.log_likelihood(trial_data, n_jobs) + self.prior.log_prob(gmm)
+                                        for gmm in background_samples])
+                kl_background = (numer_background - denom_background) / len(background_samples)
+
+                score = kl_speaker - kl_background
+                scores.append(score)
+                truth.append(trial.answer)
+
+        scores = np.array(scores)
+        truth = np.array(truth)
+
+        np.save(samples_directory + "KLForwardScores",scores)
+        np.save(samples_directory + "KLForwardAnswers", truth)
+
+    def evaluate_backward(self, all_trials):
+        raise NotImplementedError
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
@@ -137,7 +183,7 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    system = PairwiseSystem(n_mixtures, n_runs)
+    system = KLDivergenceMLStartSystem(n_mixtures, n_runs)
 
     print "reading background data"
     X = manager.get_background_data()
@@ -169,5 +215,5 @@ if __name__ == '__main__':
     logging.info('Beginning Monte Carlo Sampling')
 
     system.set_params(proposal, prior)
-    system.train_speakers(manager.get_enrolment_data(), n_procs, n_jobs, save_dir)
-    system.train_trials(manager.get_unique_trials(), n_procs, n_jobs, save_dir)
+    system.sample_speakers(manager.get_enrolment_data(), n_procs, n_jobs, save_dir)
+    system.sample_trials(manager.get_unique_trials(), n_procs, n_jobs, save_dir)
