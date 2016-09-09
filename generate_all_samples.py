@@ -18,11 +18,11 @@ from gmmmc import MarkovChain
 import multiprocessing
 import copy
 import bob
-from system.full_system import PairwiseSystem
+from system.full_system import KLDivergenceMLStartSystem
 from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
-n_mixtures, n_runs, description = 8, 100, 'pairwise_test'
+n_mixtures, n_runs, description = 8, 10, 'pairwise_test'
 relevance_factor = 150
 n_procs = 4
 n_jobs = 1
@@ -57,7 +57,7 @@ copyfile(src, dest)
 
 
 
-system = PairwiseSystem(n_mixtures, n_runs)
+system = KLDivergenceMLStartSystem(n_mixtures, n_runs)
 
 print "reading background data"
 X = manager.get_background_data()
@@ -89,5 +89,9 @@ proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(ste
 logging.info('Beginning Monte Carlo Sampling')
 
 system.set_params(proposal, prior)
-system.train_speakers(manager.get_enrolment_data(), n_procs, n_jobs, save_dir)
-system.train_trials(manager.get_unique_trials(), n_procs, n_jobs, save_dir)
+system.sample_background(manager.get_background_data(), n_jobs, save_dir)
+system.sample_speakers(manager.get_enrolment_data(), n_procs, n_jobs, save_dir)
+#system.sample_trials(manager.get_unique_trials(), n_procs, n_jobs, save_dir)
+
+system.evaluate_forward(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
+                        n_jobs, save_dir)
