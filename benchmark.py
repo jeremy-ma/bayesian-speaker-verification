@@ -66,7 +66,7 @@ except:
 #                 WeightsStaticPrior(np.array(system.ubm.weights_)))
 
 prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), 3 * np.ones((n_mixtures, X.shape[1]))),
-                 CovarsStaticPrior(np.array(system.ubm.variances)),
+                 CovarsStaticPrior(np.array(system.ubm.covars)),
                  WeightsStaticPrior(np.array(system.ubm.weights)))
 
 proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.01, 0.05, 0.1]),
@@ -78,9 +78,9 @@ system.set_params(proposal, prior)
 logging.info('Beginning Monte Carlo Sampling')
 
 times = []
-jobs =  [1,4,8,16,32,48,64,128,256] 
+jobs =  [1,4,8,16,32,48,64,128,256]
 
-for n_jobs in [1,4,8, 16, 32, 48,64,128]:
+for n_jobs in jobs:
     start = time.time()
     system.train_speakers(manager.get_enrolment_data(), n_jobs, save_dir)
     times.append(time.time() - start)
