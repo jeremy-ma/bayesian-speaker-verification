@@ -15,7 +15,7 @@ import time
 
 logging.getLogger().setLevel(logging.INFO)
 
-n_mixtures, n_runs, description = 8, 100, 'mcmc_gaussian3_priors'
+n_mixtures, n_runs, description = 8, 100, 'mcm_benchmarking'
 
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=config.reddots_part4_enrol_female,
@@ -77,12 +77,14 @@ system.set_params(proposal, prior)
 
 logging.info('Beginning Monte Carlo Sampling')
 
-for n_jobs in [1,4,8, 16, 32, 48]:
+times = []
+jobs =  [1,4,8,16,32,48,64,128,256] 
+
+for n_jobs in [1,4,8, 16, 32, 48,64,128]:
     start = time.time()
     system.train_speakers(manager.get_enrolment_data(), n_jobs, save_dir)
-    logging.info("n_jobs:{0}".format(n_jobs))
-    logging.info('time:{0}'.format(time.time() - start))
+    times.append(time.time() - start)
 
-logging.info('Saving system to file')
-with open(os.path.join(save_dir, 'system.pickle'), 'w') as fp:
-    cPickle.dump(system, fp, cPickle.HIGHEST_PROTOCOL)
+results = zip(jobs,times)
+
+print results
