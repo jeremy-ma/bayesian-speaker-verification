@@ -112,13 +112,13 @@ class KLDivergenceMLStartSystem(object):
     def load_ubm(self, ubm):
         self.ubm = ubm
 
-    def evaluate_forward(self, all_trials, speaker_data, background_data, n_jobs, samples_directory):
+    def evaluate_forward(self, all_trials, speaker_data, background_data, n_jobs, samples_directory, burn_in, lag):
         #evaluate using speaker/background posterior samples
         with open(os.path.join(samples_directory, 'background.pickle')) as fp:
             background_samples = cPickle.load(fp)
 
-        numer_background = np.sum(
-            [gmm.log_likelihood(background_data, n_jobs) + self.prior.log_prob(gmm) for gmm in background_samples])
+        numer_background = np.sum([gmm.log_likelihood(background_data, n_jobs) + self.prior.log_prob(gmm)
+                                   for gmm in background_samples[burn_in::lag]])
 
         scores = []
         truth = []
@@ -130,15 +130,15 @@ class KLDivergenceMLStartSystem(object):
                 speaker_samples = cPickle.load(fp)
 
             numer_speaker = np.sum([gmm.log_likelihood(speaker_data[speaker_id], n_jobs) + self.prior.log_prob(gmm)
-                                    for gmm in speaker_samples])
+                                    for gmm in speaker_samples[burn_in::lag]])
 
             for trial in trials:
                 trial_data = np.load(trial.feature_file)
                 denom_speaker = np.sum([gmm.log_likelihood(trial_data, n_jobs) + self.prior.log_prob(gmm)
-                                        for gmm in speaker_samples])
+                                        for gmm in speaker_samples[burn_in::lag]])
                 kl_speaker = (numer_speaker - denom_speaker) / len(speaker_samples)
                 denom_background = np.sum([gmm.log_likelihood(trial_data, n_jobs) + self.prior.log_prob(gmm)
-                                        for gmm in background_samples])
+                                        for gmm in background_samples[burn_in::lag]])
                 kl_background = (numer_background - denom_background) / len(background_samples)
 
                 score = kl_speaker - kl_background

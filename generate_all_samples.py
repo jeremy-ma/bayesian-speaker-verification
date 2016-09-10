@@ -94,4 +94,4 @@ system.sample_speakers(manager.get_enrolment_data(), n_procs, n_jobs, save_dir)
 #system.sample_trials(manager.get_unique_trials(), n_procs, n_jobs, save_dir)
 
 system.evaluate_forward(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
-                        n_jobs, save_dir)
+                        n_jobs, save_dir, n_runs/2, 1)

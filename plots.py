@@ -107,7 +107,7 @@ if __name__ == '__main__':
     n_mixtures = 8
     n_runs = 50000
     gender = 'female'
-    description = 'mcmc_rel150' + '_mapstart' + '_' + 'bigubm' '_' + gender
+    description = 'pairwise_test' '_' + gender
 
     save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
     save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
