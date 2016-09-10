@@ -117,29 +117,36 @@ class KLDivergenceMLStartSystem(object):
         with open(os.path.join(samples_directory, 'background.pickle')) as fp:
             background_samples = cPickle.load(fp)
 
-        numer_background = np.sum([gmm.log_likelihood(background_data, n_jobs) + self.prior.log_prob(gmm)
+        numer_background = np.sum([gmm.log_likelihood(background_data, n_jobs) / background_data.shape[0] + self.prior.log_prob(gmm)
                                    for gmm in background_samples[burn_in::lag]])
 
         scores = []
         truth = []
 
-        for speaker_id, trials in all_trials.iteritems():
-            speaker_path = os.path.join(samples_directory, str(speaker_id), 'speaker' + '.pickle')
+        speaker_samples = {}
+        speaker_numerators = {}
 
+        for speaker_id in all_trials:
+            speaker_path = os.path.join(samples_directory, str(speaker_id), 'speaker.pickle')
             with open(speaker_path) as fp:
-                speaker_samples = cPickle.load(fp)
+                samples = cPickle.load(fp)
+            speaker_samples[speaker_id] = samples
+            speaker_numerators[speaker_id] = np.sum([gmm.log_likelihood(speaker_data[speaker_id], n_jobs) /
+                                                     speaker_data[speaker_id].shape[0] +
+                                                     self.prior.log_prob(gmm) for gmm in
+                                                     speaker_samples[speaker_id][burn_in::lag]])
 
-            numer_speaker = np.sum([gmm.log_likelihood(speaker_data[speaker_id], n_jobs) + self.prior.log_prob(gmm)
-                                    for gmm in speaker_samples[burn_in::lag]])
-
+        for speaker_id, trials in all_trials.iteritems():
             for trial in trials:
                 trial_data = np.load(trial.feature_file)
-                denom_speaker = np.sum([gmm.log_likelihood(trial_data, n_jobs) + self.prior.log_prob(gmm)
-                                        for gmm in speaker_samples[burn_in::lag]])
-                kl_speaker = (numer_speaker - denom_speaker) / len(speaker_samples)
-                denom_background = np.sum([gmm.log_likelihood(trial_data, n_jobs) + self.prior.log_prob(gmm)
-                                        for gmm in background_samples[burn_in::lag]])
-                kl_background = (numer_background - denom_background) / len(background_samples)
+                denom_speaker = np.sum([gmm.log_likelihood(trial_data, n_jobs) / trial_data.shape[0] +
+                                        self.prior.log_prob(gmm) for gmm in
+                                        speaker_samples[trial.claimed_speaker][burn_in::lag]])
+                kl_speaker = (speaker_numerators[trial.claimed_speaker] - denom_speaker) / \
+                             len(speaker_samples[trial.claimed_speaker][burn_in::lag])
+                denom_background = np.sum([gmm.log_likelihood(trial_data, n_jobs) / trial_data.shape[0]  +
+                                           self.prior.log_prob(gmm) for gmm in background_samples[burn_in::lag]])
+                kl_background = (numer_background - denom_background) / len(background_samples[burn_in::lag])
 
                 score = kl_speaker - kl_background
                 scores.append(score)
