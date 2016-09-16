@@ -82,7 +82,7 @@ proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(ste
 logging.info('Beginning Evaluation')
 
 system.set_params(proposal, prior)
-system.evaluate_forward(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
+system.evaluate_forward_unnormalised(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
                         n_jobs, save_dir, n_runs/2, 1)
 
 logging.info('Saving script..')
