@@ -178,5 +178,71 @@ class KLDivergenceMLStartSystem(object):
         with open(samples_directory + "books.pickle", 'w') as fp:
             cPickle.dump(books, fp)
 
+    def evaluate_forward_unnormalised(self, all_trials, speaker_data, background_data, n_jobs, samples_directory, burn_in, lag):
+
+        #evaluate using speaker/background posterior samples
+        with open(os.path.join(samples_directory, 'background.pickle')) as fp:
+            background_samples = cPickle.load(fp)
+
+        background_posteriors = np.array([gmm.log_likelihood(background_data, n_jobs) / background_data.shape[0] +
+                                          self.prior.log_prob(gmm) for gmm in background_samples[burn_in::lag]])
+        # background_posteriors = background_posteriors - logsumexp(background_posteriors)
+        numer_background = np.sum(background_posteriors)
+
+        scores = []
+        truth = []
+
+        speaker_samples = {}
+        speaker_numerators = {}
+
+        num_trials = 0
+        for speaker_id in all_trials:
+            num_trials += len(all_trials[speaker_id])
+            speaker_path = os.path.join(samples_directory, str(speaker_id), 'speaker.pickle')
+            with open(speaker_path) as fp:
+                samples = cPickle.load(fp)
+            speaker_samples[speaker_id] = samples
+            speaker_posteriors = np.array([gmm.log_likelihood(speaker_data[speaker_id], n_jobs) /
+                                                     speaker_data[speaker_id].shape[0] +
+                                                     self.prior.log_prob(gmm) for gmm in
+                                                     speaker_samples[speaker_id][burn_in::lag]])
+            # normalise the log probs by dividing by the sum
+            # speaker_posteriors = speaker_posteriors - logsumexp(speaker_posteriors)
+            speaker_numerators[speaker_id] = np.sum(speaker_posteriors)
+
+        books = defaultdict(dict)
+
+        num_processed = 0
+        for speaker_id, trials in all_trials.iteritems():
+            for trial in trials:
+                if num_processed % 100 == 0:
+                    print "{0} done".format(float(num_processed) / num_trials)
+                num_processed += 1
+                trial_data = np.load(trial.feature_file)
+                denom_speaker_posteriors = np.array([gmm.log_likelihood(trial_data, n_jobs) / trial_data.shape[0] +
+                                self.prior.log_prob(gmm) for gmm in speaker_samples[trial.claimed_speaker][burn_in::lag]])
+                # denom_speaker_posteriors = denom_speaker_posteriors - logsumexp(denom_speaker_posteriors)
+                denom_speaker = np.sum(denom_speaker_posteriors)
+                kl_speaker = (speaker_numerators[trial.claimed_speaker] - denom_speaker) / \
+                             len(speaker_samples[trial.claimed_speaker][burn_in::lag])
+
+                denom_background_posteriors = np.array([gmm.log_likelihood(trial_data, n_jobs) / trial_data.shape[0]  +
+                                           self.prior.log_prob(gmm) for gmm in background_samples[burn_in::lag]])
+                # denom_background_posteriors = denom_background_posteriors - logsumexp(denom_background_posteriors)
+                denom_background = np.sum(denom_background_posteriors)
+                kl_background = (numer_background - denom_background) / len(background_samples[burn_in::lag])
+                score = kl_speaker - kl_background
+                scores.append(score)
+                truth.append(trial.answer)
+                books[speaker_id][trial.actual_speaker] = score
+
+        scores = np.array(scores)
+        truth = np.array(truth)
+
+        np.save(os.path.join(samples_directory, "KLForwardUnnormScores.npy"),scores)
+        np.save(os.path.join(samples_directory, "KLForwardUnnormAnswers.npy"), truth)
+        with open(samples_directory + "books.pickle", 'w') as fp:
+            cPickle.dump(books, fp)
+
     def evaluate_backward(self, all_trials):
         raise NotImplementedError
