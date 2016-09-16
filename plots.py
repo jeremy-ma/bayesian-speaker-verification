@@ -70,6 +70,8 @@ def plot_curves(file_list):
         scores, answers = np.load(scores_name), np.load(answers_name)
         print scores, answers
         scores, indices = np.unique(scores, return_index=True)
+        if i == 1:
+            scores = -scores
         answers = answers[indices]
         fps, fns, _ = detection_error_tradeoff(answers, scores)
         eer = EER(fps, fns)
@@ -91,7 +93,6 @@ def plot_regular():
     plotstuff = []
 
     for rel in [ 10, 20, 50, 100, 150, 200, 250]:
-
         regular_scores = os.path.join('gmm_ubm_results', 'map_scores8_female_rel{0}_smallubm.npy'.format(rel))
         regular_answers = os.path.join('gmm_ubm_results', 'map_answers8_female_rel{0}_smallubm.npy'.format(rel))
         plotstuff.append((regular_scores, regular_answers, 'GMM/UBM rel{0}'.format(rel)))
@@ -115,9 +116,6 @@ if __name__ == '__main__':
     save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
     save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
 
-    scores = np.load(os.path.join(save_path, 'KLForwardScores.npy'))
-    pdb.set_trace()
-
 
     regular_scores = os.path.join('gmm_ubm_results', 'map_scores8_relevance150.npy')
     regular_answers = os.path.join('gmm_ubm_results', 'map_answers8_relevance150.npy')
@@ -126,7 +124,7 @@ if __name__ == '__main__':
         (regular_scores, regular_answers, 'GMM/UBM'),
         #(os.path.join(save_path, 'scoresMHMC.npy'), os.path.join(save_path, 'answersMHMC.npy'), 'MC GMM/UBM'),
         #(os.path.join(save_path, 'scoresMCMAP.npy'), os.path.join(save_path, 'answersMCMAP.npy'), 'MC MAP GMM/UBM')
-        (os.path.join(save_path, 'KLForwardScores.npy'), os.path.join(save_path, 'KLForwardAnswers.npy'), 'MC KL Divergence')
+        (os.path.join(save_path, 'samples/KLForwardScores.npy'), os.path.join(save_path, 'samples/KLForwardAnswers.npy'), 'MC KL Divergence')
     ]
     plt.title('Det Curve:' + description + '/n_mixtures{0}'.format(n_mixtures) + '/n_runs{0}'.format(n_runs),
               fontsize=22)

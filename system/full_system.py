@@ -18,6 +18,7 @@ from gmmmc import MarkovChain
 import multiprocessing
 import copy
 import bob
+from collections import defaultdict
 
 
 def get_samples(initial, prior, proposal, X, n_jobs, n_runs):
@@ -128,7 +129,9 @@ class KLDivergenceMLStartSystem(object):
         speaker_samples = {}
         speaker_numerators = {}
 
+        num_trials = 0
         for speaker_id in all_trials:
+            num_trials += len(all_trials[speaker_id])
             speaker_path = os.path.join(samples_directory, str(speaker_id), 'speaker.pickle')
             with open(speaker_path) as fp:
                 samples = cPickle.load(fp)
@@ -141,8 +144,14 @@ class KLDivergenceMLStartSystem(object):
             speaker_posteriors = speaker_posteriors - logsumexp(speaker_posteriors)
             speaker_numerators[speaker_id] = np.sum(speaker_posteriors)
 
+        books = defaultdict(dict)
+
+        num_processed = 0
         for speaker_id, trials in all_trials.iteritems():
             for trial in trials:
+                if num_processed % 100 == 0:
+                    print "{0} done".format(float(num_processed) / num_trials)
+                num_processed += 1
                 trial_data = np.load(trial.feature_file)
                 denom_speaker_posteriors = np.array([gmm.log_likelihood(trial_data, n_jobs) / trial_data.shape[0] +
                                 self.prior.log_prob(gmm) for gmm in speaker_samples[trial.claimed_speaker][burn_in::lag]])
@@ -159,76 +168,15 @@ class KLDivergenceMLStartSystem(object):
                 score = kl_speaker - kl_background
                 scores.append(score)
                 truth.append(trial.answer)
+                books[speaker_id][trial.actual_speaker] = score
 
         scores = np.array(scores)
         truth = np.array(truth)
 
-        np.save(samples_directory + "KLForwardScores",scores)
-        np.save(samples_directory + "KLForwardAnswers", truth)
+        np.save(os.path.join(samples_directory, "KLForwardScores.npy"),scores)
+        np.save(os.path.join(samples_directory, "KLForwardAnswers.npy"), truth)
+        with open(samples_directory + "books.pickle", 'w') as fp:
+            cPickle.dump(books, fp)
 
     def evaluate_backward(self, all_trials):
         raise NotImplementedError
-
-if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.INFO)
-    n_mixtures, n_runs, description = 8, 10, 'pairwise_test'
-    relevance_factor = 150
-    n_procs = 4
-    n_jobs = 1
-    gender = 'female'
-    description += '_' + gender
-
-    if gender == 'male':
-        enrolment = config.reddots_part4_enrol_male
-        trials = config.reddots_part4_trial_male
-    else:
-        enrolment = config.reddots_part4_enrol_female
-        trials = config.reddots_part4_trial_female
-
-    manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
-                                   enrol_file=config.reddots_part4_enrol_female,
-                                   trial_file=config.reddots_part4_trial_female)
-
-    save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-
-    save_dir = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs),
-                            "samples")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    system = KLDivergenceMLStartSystem(n_mixtures, n_runs)
-
-    print "reading background data"
-    X = manager.get_background_data()
-    print "obtained background data"
-
-    ubm_path = os.path.join(save_dir, 'ubm.pickle')
-
-    try:
-        with open(ubm_path) as fp:
-            ubm = cPickle.load(fp)
-            system.train_ubm(X[:1000])  # hack to initialise the ubm
-            system.load_ubm(ubm)
-        logging.info("Loaded background model")
-    except IOError:
-        logging.info('Training background model...')
-        system.train_ubm(manager.get_background_data())
-        with open(ubm_path, 'wb') as fp:
-            cPickle.dump(system.ubm, fp, cPickle.HIGHEST_PROTOCOL)
-        logging.info('Finished, saved background model to file...')
-
-    prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), np.array(system.ubm.covars) / relevance_factor),
-                     CovarsStaticPrior(np.array(system.ubm.covars)),
-                     WeightsStaticPrior(np.array(system.ubm.weights)))
-
-    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.0002, 0.001]),
-                                          propose_covars=None,
-                                          propose_weights=None)
-
-    logging.info('Beginning Monte Carlo Sampling')
-
-    system.set_params(proposal, prior)
-    system.sample_speakers(manager.get_enrolment_data(), n_procs, n_jobs, save_dir)
-    system.sample_trials(manager.get_unique_trials(), n_procs, n_jobs, save_dir)
