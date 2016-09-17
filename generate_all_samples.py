@@ -18,14 +18,14 @@ from gmmmc import MarkovChain
 import multiprocessing
 import copy
 import bob
-from system.full_system import KLDivergenceMLStartSystem
+from system.full_system import KLDivergenceMLStartSystem, KLDivergenceMAPStartSystem
 from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
-n_mixtures, n_runs, description = 8, 10, 'pairwise_test'
+n_mixtures, n_runs, description = 8, 10, 'kl_mapstart'
 relevance_factor = 150
-n_procs = 4
-n_jobs = 1
+n_procs = 1
+n_jobs = -1
 gender = 'female'
 description += '_' + gender
 
@@ -40,8 +40,7 @@ else:
 
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
                                enrol_file=enrolment,
-                               trial_file=trials,
-                               background_data_directory=background)
+                               trial_file=trials)
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 if not os.path.exists(save_path):
@@ -58,9 +57,7 @@ src = __file__
 dest = os.path.join(save_dir, 'script.py')
 copyfile(src, dest)
 
-
-
-system = KLDivergenceMLStartSystem(n_mixtures, n_runs)
+system = KLDivergenceMAPStartSystem(n_mixtures, n_runs, relevance_factor)
 
 print "reading background data"
 X = manager.get_background_data()
@@ -96,5 +93,5 @@ system.sample_background(manager.get_background_data(), n_jobs, save_dir)
 system.sample_speakers(manager.get_enrolment_data(), n_procs, n_jobs, save_dir)
 #system.sample_trials(manager.get_unique_trials(), n_procs, n_jobs, save_dir)
 
-system.evaluate_forward(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
+system.evaluate_forward_unnormalised(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
                         n_jobs, save_dir, n_runs/2, 1)
