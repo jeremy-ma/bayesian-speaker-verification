@@ -32,13 +32,16 @@ description += '_' + gender
 if gender == 'male':
     enrolment = config.reddots_part4_enrol_male
     trials = config.reddots_part4_trial_male
+    background = config.background_data_directory_male
 else:
     enrolment = config.reddots_part4_enrol_female
     trials = config.reddots_part4_trial_female
+    background = config.background_data_directory_female
 
 manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
-                               enrol_file=config.reddots_part4_enrol_female,
-                               trial_file=config.reddots_part4_trial_female)
+                               enrol_file=enrolment,
+                               trial_file=trials,
+                               background_data_directory=background)
 
 save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
 if not os.path.exists(save_path):
