@@ -14,8 +14,9 @@ import pickle
 
 class BobGmmSystem():
 
-    def __init__(self, num_gaussians=8):
+    def __init__(self, num_gaussians, relevance_factor):
         self.model = GMM(num_gaussians)
+        self.model.relevance_factor = relevance_factor
         self.individuals = {}
 
     def train_background(self, X):
@@ -57,8 +58,7 @@ class BobGmmSystem():
 
 if __name__ == '__main__':
 
-    n_mixtures = 8
-
+    n_mixtures = 128
     relevance_factor = 150
     ubm_size = 'smallubm'
     gender = 'female'
@@ -88,13 +88,10 @@ if __name__ == '__main__':
     back = manager.get_background_data()
     print back.shape
     for relevance_factor in [4, 10, 20, 50, 100, 150, 200, 250]:
-        system = BobGmmSystem(num_gaussians=n_mixtures)
+        system = BobGmmSystem(n_mixtures, relevance_factor)
         print "training background"
         system.train_background(back)
         print "training speaker models"
-
-        system.model.relevance_factor=relevance_factor
-
         system.train_speakers(manager.get_enrolment_data())
 
         numCorrect = 0

@@ -374,6 +374,9 @@ class KLDivergenceMAPStartSystem(object):
         with open(samples_directory + "books.pickle", 'w') as fp:
             cPickle.dump(books, fp)
 
+    #def evaluate_mean_estimate(self, all_trials, speaker_data, background_data, n_jobs, samples_directory, burn_in, lag):
+    #    with open(os.path.join(samples_directory, 'background'))
+
     def evaluate_forward_unnormalised(self, all_trials, speaker_data, background_data, n_jobs, samples_directory, burn_in, lag):
 
         #evaluate using speaker/background posterior samples
@@ -437,6 +440,8 @@ class KLDivergenceMAPStartSystem(object):
         np.save(os.path.join(samples_directory, "KLForwardUnnormAnswers.npy"), truth)
         with open(samples_directory + "books.pickle", 'w') as fp:
             cPickle.dump(books, fp)
+
+
 
     def evaluate_backward(self, all_trials):
         raise NotImplementedError
