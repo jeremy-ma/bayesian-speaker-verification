@@ -84,8 +84,7 @@ logging.info('Beginning Evaluation')
 system.set_params(proposal, prior)
 #system.evaluate_forward_unnormalised(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
 #                        n_jobs, save_dir, n_runs/2, 1)
-system.evaluate_bayes_factor(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data())
-
+system.evaluate_bayes_factor(manager.get_trial_data(), n_jobs, save_dir, n_runs/2, 50)
 
 logging.info('Saving script..')
 src = __file__
