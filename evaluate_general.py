@@ -22,7 +22,7 @@ from system.full_system import KLDivergenceMLStartSystem
 from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
-n_mixtures, n_runs, description = 8, 10, 'pairwise_test'
+n_mixtures, n_runs, description = 8, 100000, 'all_params'
 relevance_factor = 150
 n_procs = 4
 n_jobs = 1
