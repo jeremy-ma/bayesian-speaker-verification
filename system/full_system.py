@@ -247,7 +247,49 @@ class KLDivergenceMLStartSystem(object):
     def evaluate_backward(self, all_trials):
         raise NotImplementedError
 
+    def evaluate_bayes_factor(self, all_trials, n_jobs, samples_directory, burn_in, lag):
+        scores = []
+        truth = []
 
+        speaker_samples = {}
+        speaker_numerators = {}
+
+        num_trials = 0
+        for speaker_id in all_trials:
+            num_trials += len(all_trials[speaker_id])
+            speaker_path = os.path.join(samples_directory, str(speaker_id), 'speaker.pickle')
+            with open(speaker_path) as fp:
+                samples = cPickle.load(fp)
+            speaker_samples[speaker_id] = samples
+
+        with open(os.path.join(samples_directory, 'ubm.pickle')) as fp:
+            ubm = cPickle.load(fp)
+
+        books = defaultdict(dict)
+
+        num_processed = 0
+        for speaker_id, trials in all_trials.iteritems():
+            for trial in trials:
+                if num_processed % 100 == 0:
+                    print "{0} done".format(float(num_processed) / num_trials)
+                num_processed += 1
+                trial_data = np.load(trial.feature_file)
+                background_likelihood = ubm.log_likelihood(trial_data, n_jobs) / trial_data.shape[0]
+                claimed_likelihoods = [gmm.log_likelihood(trial_data, n_jobs) / trial_data.shape[0]
+                                       for gmm in speaker_samples[speaker_id]]
+                claimed = logsumexp(np.array(claimed_likelihoods)) - np.log(len(speaker_samples[speaker_id]))
+                score = claimed - background_likelihood
+                scores.append(score)
+                truth.append(trial.answer)
+                books[speaker_id][trial.actual_speaker] = score
+
+        scores = np.array(scores)
+        truth = np.array(truth)
+
+        np.save(os.path.join(samples_directory, "BayesFactorScores.npy"), scores)
+        np.save(os.path.join(samples_directory, "BayesFactorAnswers.npy"), truth)
+        with open(samples_directory + "BayesFactorBooks.pickle", 'w') as fp:
+            cPickle.dump(books, fp)
 
 class KLDivergenceMAPStartSystem(object):
 
@@ -438,10 +480,63 @@ class KLDivergenceMAPStartSystem(object):
 
         np.save(os.path.join(samples_directory, "KLForwardUnnormScores.npy"),scores)
         np.save(os.path.join(samples_directory, "KLForwardUnnormAnswers.npy"), truth)
-        with open(samples_directory + "books.pickle", 'w') as fp:
+        with open(samples_directory + "KLForwardUnnormBooks.pickle", 'w') as fp:
             cPickle.dump(books, fp)
 
 
 
-    def evaluate_backward(self, all_trials):
-        raise NotImplementedError
+    def evaluate_bayes_factor(self, all_trials, n_jobs, samples_directory, burn_in, lag):
+        scores = []
+        truth = []
+
+        speaker_samples = {}
+        speaker_numerators = {}
+
+        num_trials = 0
+        for speaker_id in all_trials:
+            num_trials += len(all_trials[speaker_id])
+            speaker_path = os.path.join(samples_directory, str(speaker_id), 'speaker.pickle')
+            with open(speaker_path) as fp:
+                samples = cPickle.load(fp)
+            speaker_samples[speaker_id] = samples
+
+        with open(os.path.join(samples_directory, 'ubm.pickle')) as fp:
+            ubm = cPickle.load(fp)
+
+        books = defaultdict(dict)
+
+        num_processed = 0
+        for speaker_id, trials in all_trials.iteritems():
+            for trial in trials:
+                if num_processed % 100 == 0:
+                    print "{0} done".format(float(num_processed) / num_trials)
+                num_processed += 1
+                trial_data = np.load(trial.feature_file)
+                background_likelihood = ubm.log_likelihood(trial_data, n_jobs) / trial_data.shape[0]
+                claimed_likelihoods = [gmm.log_likelihood(trial_data, n_jobs) / trial_data.shape[0]
+                                       for gmm in speaker_samples[speaker_id]]
+                claimed = logsumexp(np.array(claimed_likelihoods)) - np.log(len(speaker_samples[speaker_id]))
+                score = claimed - background_likelihood
+                scores.append(score)
+                truth.append(trial.answer)
+                books[speaker_id][trial.actual_speaker] = score
+
+        scores = np.array(scores)
+        truth = np.array(truth)
+
+        np.save(os.path.join(samples_directory, "BayesFactorScores.npy"), scores)
+        np.save(os.path.join(samples_directory, "BayesFactorAnswers.npy"), truth)
+        with open(samples_directory + "BayesFactorBooks.pickle", 'w') as fp:
+            cPickle.dump(books, fp)
+
+
+def verify(self, claimed_speaker, features, n_jobs, burn_in=0, lag=50):
+    gmm_samples = self.model_samples[claimed_speaker][burn_in::lag]
+    claimed_likelihoods = []
+    for gmm in gmm_samples:
+        claimed_likelihoods.append(gmm.log_likelihood(features, n_jobs) / features.shape[0])
+    claimed = logsumexp(np.array(claimed_likelihoods)) - np.log(len(gmm_samples))
+    background = self.ubm.log_likelihood(features, n_jobs) / features.shape[0]
+    likelihood_ratio = claimed - background
+
+    return likelihood_ratio

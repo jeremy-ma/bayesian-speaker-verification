@@ -69,9 +69,9 @@ def plot_curves(file_list):
         # remove identical scores (due to files with just noise in them)
         scores, answers = np.load(scores_name), np.load(answers_name)
         print scores, answers
-        scores, indices = np.unique(scores, return_index=True)
-        if i == 1:
+        if i > 0:
             scores = -scores
+        scores, indices = np.unique(scores, return_index=True)
         answers = answers[indices]
         fps, fns, _ = detection_error_tradeoff(answers, scores)
         eer = EER(fps, fns)
@@ -83,38 +83,34 @@ def plot_curves(file_list):
     plt.show()
 
 def plot_regular():
-    n_mixtures = 8
-    n_runs = 1000
+    n_mixtures = 128
     gender = 'female'
     description = 'UBM/GMM' + '_' + gender
 
     save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
-    save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
     plotstuff = []
 
     for rel in [ 10, 20, 50, 100, 150, 200, 250]:
-        regular_scores = os.path.join('gmm_ubm_results', 'map_scores8_female_rel{0}_smallubm.npy'.format(rel))
-        regular_answers = os.path.join('gmm_ubm_results', 'map_answers8_female_rel{0}_smallubm.npy'.format(rel))
+        regular_scores = os.path.join('gmm_ubm_results', 'map_scores{0}_female_rel{1}_smallubm.npy'.format(n_mixtures,rel))
+        regular_answers = os.path.join('gmm_ubm_results', 'map_answers{0}_female_rel{1}_smallubm.npy'.format(n_mixtures,rel))
         plotstuff.append((regular_scores, regular_answers, 'GMM/UBM rel{0}'.format(rel)))
 
-    plt.title('Det Curve:' + description + '/n_mixtures{0}'.format(n_mixtures) + '/n_runs{0}'.format(n_runs),
+    plt.title('Det Curve:' + description + '/n_mixtures{0}'.format(n_mixtures),
               fontsize=22)
 
     plot_curves(plotstuff)
 
 
 if __name__ == '__main__':
-    #plot_regular()
-
-
-
+    # plot_regular()
     n_mixtures = 8
-    n_runs = 30000
+    n_runs =30000
     gender = 'female'
-    description = 'pairwise_test_' + gender
+    description = 'kl_mapstart_' + gender
 
-    save_path = os.path.join(config.dropbox_directory, config.computer_id, description)
-    save_path = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
+    save_path = os.path.join(config.dropbox_directory, config.computer_id)
+    save_path2 = os.path.join(save_path, 'pairwise_test_female', 'gaussians' + str(n_mixtures), 'iterations' + str(100000))
+    save_path = os.path.join( save_path, description, 'gaussians' + str(n_mixtures), 'iterations' + str(n_runs))
 
 
     regular_scores = os.path.join('gmm_ubm_results', 'map_scores8_relevance150.npy')
@@ -124,7 +120,10 @@ if __name__ == '__main__':
         (regular_scores, regular_answers, 'GMM/UBM'),
         #(os.path.join(save_path, 'scoresMHMC.npy'), os.path.join(save_path, 'answersMHMC.npy'), 'MC GMM/UBM'),
         #(os.path.join(save_path, 'scoresMCMAP.npy'), os.path.join(save_path, 'answersMCMAP.npy'), 'MC MAP GMM/UBM')
-        (os.path.join(save_path, 'samples/KLForwardScores.npy'), os.path.join(save_path, 'samples/KLForwardAnswers.npy'), 'MC KL Divergence')
+        (os.path.join(save_path2, 'samples/KLForwardUnnormScores.npy'), os.path.join(save_path, 'samples/KLForwardUnnormAnswers.npy'),
+        'MC KL Divergence Unnormalised 100k'),
+        (os.path.join(save_path, 'samples/KLForwardUnnormScores.npy'), os.path.join(save_path, 'samples/KLForwardUnnormAnswers.npy'),
+        'MC KL Divergence Unnormalised MAPstart 30k')
     ]
     plt.title('Det Curve:' + description + '/n_mixtures{0}'.format(n_mixtures) + '/n_runs{0}'.format(n_runs),
               fontsize=22)

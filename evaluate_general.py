@@ -82,10 +82,12 @@ proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(ste
 logging.info('Beginning Evaluation')
 
 system.set_params(proposal, prior)
-system.evaluate_forward_unnormalised(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
-                        n_jobs, save_dir, n_runs/2, 1)
+#system.evaluate_forward_unnormalised(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
+#                        n_jobs, save_dir, n_runs/2, 1)
+system.evaluate_bayes_factor(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data())
+
 
 logging.info('Saving script..')
 src = __file__
-dest = os.path.join(save_dir, 'eval_script_kl.py')
+dest = os.path.join(save_dir, 'eval_script.py')
 copyfile(src, dest)

@@ -92,6 +92,6 @@ system.set_params(proposal, prior)
 system.sample_background(manager.get_background_data(), n_jobs, save_dir)
 system.sample_speakers(manager.get_enrolment_data(), n_procs, n_jobs, save_dir)
 #system.sample_trials(manager.get_unique_trials(), n_procs, n_jobs, save_dir)
-
-system.evaluate_forward_unnormalised(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
-                        n_jobs, save_dir, n_runs/2, 1)
+#system.evaluate_forward_unnormalised(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
+#                        n_jobs, save_dir, n_runs/2, 1)
+system.evaluate_bayes_factor(manager.get_trial_data(),n_jobs,save_dir, 0,1)
