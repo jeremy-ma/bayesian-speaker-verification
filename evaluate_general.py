@@ -22,10 +22,10 @@ from system.full_system import KLDivergenceMLStartSystem
 from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
-n_mixtures, n_runs, description = 8, 10, 'pairwise_test'
+n_mixtures, n_runs, description = 8, 50000, 'mapstart_fullbackground_new'
 relevance_factor = 150
-n_procs = 4
-n_jobs = 1
+n_procs = 1
+n_jobs = -1
 gender = 'female'
 description += '_' + gender
 
@@ -58,18 +58,13 @@ print "obtained background data"
 
 ubm_path = os.path.join(save_dir, 'ubm.pickle')
 
-try:
-    with open(ubm_path) as fp:
-        ubm = cPickle.load(fp)
-        system.train_ubm(X[:1000])  # hack to initialise the ubm
-        system.load_ubm(ubm)
-    logging.info("Loaded background model")
-except IOError:
-    logging.info('Training background model...')
-    system.train_ubm(manager.get_background_data())
-    with open(ubm_path, 'wb') as fp:
-        cPickle.dump(system.ubm, fp, cPickle.HIGHEST_PROTOCOL)
-    logging.info('Finished, saved background model to file...')
+with open(ubm_path) as fp:
+    ubm = cPickle.load(fp)
+    system.train_ubm(X[:1000])  # hack to initialise the ubm
+    system.load_ubm(ubm)
+
+logging.info("Loaded background model")
+
 
 prior = GMMPrior(MeansGaussianPrior(np.array(system.ubm.means), np.array(system.ubm.covars) / relevance_factor),
                  CovarsStaticPrior(np.array(system.ubm.covars)),
@@ -84,9 +79,10 @@ logging.info('Beginning Evaluation')
 system.set_params(proposal, prior)
 #system.evaluate_forward_unnormalised(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
 #                        n_jobs, save_dir, n_runs/2, 1)
-system.evaluate_bayes_factor(manager.get_trial_data(), n_jobs, save_dir, n_runs/2, 50)
 
 logging.info('Saving script..')
 src = __file__
 dest = os.path.join(save_dir, 'eval_script.py')
 copyfile(src, dest)
+
+system.evaluate_bayes_factor(manager.get_trial_data(), n_jobs, save_dir, 0, 10000)

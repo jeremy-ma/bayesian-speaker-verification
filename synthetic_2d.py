@@ -6,6 +6,7 @@ from gmmmc.proposals import GMMBlockMetropolisProposal, GaussianStepCovarProposa
 from gmmmc import MarkovChain, AnnealedImportanceSampling
 import logging
 import matplotlib.pyplot as plt
+import pdb
 
 np.random.seed(3)
 logging.getLogger().setLevel(logging.INFO)
@@ -49,11 +50,12 @@ proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(ste
                                       propose_weights=None)
 
 
-#mcmc = MarkovChain(proposal, prior, ubm)
-betas = np.concatenate(([0], np.logspace(-3,0,300)))
-ais = AnnealedImportanceSampling(proposal, prior, betas)
+mcmc = MarkovChain(proposal, prior, ubm)
+# betas = np.concatenate(([0], np.logspace(-3,0,300)))
+# ais = AnnealedImportanceSampling(proposal, prior, betas)
 
-samples = ais.sample(speaker_X, 100)
+#samples = ais.sample(speaker_X, 100)
+samples = mcmc.sample(speaker_X, 10000)
 print proposal.propose_mean.get_acceptance()
 """
 mapest = samples[0]
@@ -65,9 +67,7 @@ for sample in samples:
         mapest = sample
 """
 
-final = samples[-1]
-
-mc_means = [[s.means[0][0], s.means[1][0]] for s,_ in samples]
+mc_means = [[s.means[0][0], s.means[1][0]] for s in samples]
 mc_means = np.array(mc_means)
 
 mcmc = plt.scatter(mc_means[:,0], mc_means[:,1], color= 'b')
@@ -95,3 +95,4 @@ for s in mc_means[700:710]:
     plt.plot(x,mlab.normpdf(x, s[0], 0.01) + mlab.normpdf(x, s[1], 0.01))
     plt.show()
 """
+

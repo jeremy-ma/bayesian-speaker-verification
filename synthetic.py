@@ -6,6 +6,7 @@ from gmmmc.proposals import GMMBlockMetropolisProposal, GaussianStepCovarProposa
 from gmmmc import MarkovChain
 import logging
 import matplotlib.pyplot as plt
+import pdb
 
 np.random.seed(2)
 logging.getLogger().setLevel(logging.INFO)
@@ -67,4 +68,3 @@ plt.scatter(ubm.means[0][0], -1, color= 'y')
 print ubm.covars
 
 plt.show()
-manager.get_background_data()
