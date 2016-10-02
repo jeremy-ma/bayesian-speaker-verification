@@ -482,7 +482,7 @@ class KLDivergenceMAPStartSystem(object):
         with open(samples_directory + "KLForwardUnnormBooks.pickle", 'w') as fp:
             cPickle.dump(books, fp)
 
-    def evaluate_bayes_factor(self, all_trials, n_jobs, samples_directory, burn_in, lag):
+    def evaluate_bayes_factor(self, all_trials, n_jobs, samples_directory, burn_in, lag, id=''):
         scores = []
         truth = []
 
@@ -522,9 +522,9 @@ class KLDivergenceMAPStartSystem(object):
         scores = np.array(scores)
         truth = np.array(truth)
 
-        np.save(os.path.join(samples_directory, "BayesFactorScores.npy"), scores)
-        np.save(os.path.join(samples_directory, "BayesFactorAnswers.npy"), truth)
-        with open(samples_directory + "BayesFactorBooks.pickle", 'w') as fp:
+        np.save(os.path.join(samples_directory, id + "BayesFactorScores.npy"), scores)
+        np.save(os.path.join(samples_directory, id + "BayesFactorAnswers.npy"), truth)
+        with open(samples_directory + id + "BayesFactorBooks.pickle", 'w') as fp:
             cPickle.dump(books, fp)
 
 
