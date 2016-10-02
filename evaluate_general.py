@@ -23,6 +23,7 @@ from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
 n_mixtures, n_runs, description = 8, 50000, 'mapstart_fullbackground_new'
+
 relevance_factor = 150
 n_procs = 1
 n_jobs = -1
@@ -84,5 +85,4 @@ logging.info('Saving script..')
 src = __file__
 dest = os.path.join(save_dir, 'eval_script.py')
 copyfile(src, dest)
-
 system.evaluate_bayes_factor(manager.get_trial_data(), n_jobs, save_dir, 0, 10000)
