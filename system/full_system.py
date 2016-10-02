@@ -498,7 +498,7 @@ class KLDivergenceMAPStartSystem(object):
             speaker_path = os.path.join(samples_directory, str(speaker_id), 'speaker.pickle')
             with open(speaker_path) as fp:
                 samples = cPickle.load(fp)
-            speaker_samples[speaker_id] = samples
+            speaker_samples[speaker_id] = samples[burn_in::lag]
 
         with open(os.path.join(samples_directory, 'ubm.pickle')) as fp:
             ubm = cPickle.load(fp)
