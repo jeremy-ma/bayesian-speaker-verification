@@ -20,7 +20,6 @@ import copy
 import bob
 from collections import defaultdict
 
-
 def get_samples(initial, prior, proposal, X, n_jobs, n_runs):
     """
     GMM monte carlo
@@ -483,8 +482,6 @@ class KLDivergenceMAPStartSystem(object):
         with open(samples_directory + "KLForwardUnnormBooks.pickle", 'w') as fp:
             cPickle.dump(books, fp)
 
-
-
     def evaluate_bayes_factor(self, all_trials, n_jobs, samples_directory, burn_in, lag):
         scores = []
         truth = []
@@ -499,6 +496,7 @@ class KLDivergenceMAPStartSystem(object):
             with open(speaker_path) as fp:
                 samples = cPickle.load(fp)
             speaker_samples[speaker_id] = samples[burn_in::lag]
+            print len(speaker_samples[speaker_id])
 
         with open(os.path.join(samples_directory, 'ubm.pickle')) as fp:
             ubm = cPickle.load(fp)

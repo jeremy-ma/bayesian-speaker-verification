@@ -18,7 +18,7 @@ from gmmmc import MarkovChain
 import multiprocessing
 import copy
 import bob
-from system.full_system import KLDivergenceMLStartSystem
+from system.full_system import KLDivergenceMLStartSystem, KLDivergenceMAPStartSystem
 from shutil import copyfile
 
 logging.getLogger().setLevel(logging.INFO)
@@ -51,7 +51,7 @@ save_dir = os.path.join(save_path, 'gaussians' + str(n_mixtures), 'iterations' +
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
-system = KLDivergenceMLStartSystem(n_mixtures, n_runs)
+system = KLDivergenceMAPStartSystem(n_mixtures, n_runs, relevance_factor)
 
 print "reading background data"
 X = manager.get_background_data()
@@ -81,8 +81,9 @@ system.set_params(proposal, prior)
 #system.evaluate_forward_unnormalised(manager.get_trial_data(), manager.get_enrolment_data(), manager.get_background_data(),
 #                        n_jobs, save_dir, n_runs/2, 1)
 
+system.evaluate_bayes_factor(manager.get_trial_data(), n_jobs, save_dir, 0, 10000)
+
 logging.info('Saving script..')
 src = __file__
 dest = os.path.join(save_dir, 'eval_script.py')
 copyfile(src, dest)
-system.evaluate_bayes_factor(manager.get_trial_data(), n_jobs, save_dir, 0, 10000)
