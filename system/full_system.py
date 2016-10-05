@@ -423,7 +423,6 @@ class KLDivergenceMAPStartSystem(object):
         #evaluate using speaker/background posterior samples
         with open(os.path.join(samples_directory, 'background.pickle')) as fp:
             background_samples = cPickle.load(fp)
-
         background_posteriors = np.array([gmm.log_likelihood(background_data, n_jobs) / background_data.shape[0] +
                                           self.prior.log_prob(gmm) for gmm in background_samples[burn_in::lag]])
         # background_posteriors = background_posteriors - logsumexp(background_posteriors)
@@ -528,13 +527,168 @@ class KLDivergenceMAPStartSystem(object):
             cPickle.dump(books, fp)
 
 
-def verify(self, claimed_speaker, features, n_jobs, burn_in=0, lag=50):
-    gmm_samples = self.model_samples[claimed_speaker][burn_in::lag]
-    claimed_likelihoods = []
-    for gmm in gmm_samples:
-        claimed_likelihoods.append(gmm.log_likelihood(features, n_jobs) / features.shape[0])
-    claimed = logsumexp(np.array(claimed_likelihoods)) - np.log(len(gmm_samples))
-    background = self.ubm.log_likelihood(features, n_jobs) / features.shape[0]
-    likelihood_ratio = claimed - background
+    def evaluate_posterior_mean(self, all_trials, n_jobs, samples_directory, burn_in, lag, id=''):
+        # just means for now
+        scores = []
+        truth = []
 
-    return likelihood_ratio
+        speaker_posterior_means = {}
+
+        num_trials = 0
+        for speaker_id in all_trials:
+            num_trials += len(all_trials[speaker_id])
+            speaker_path = os.path.join(samples_directory, str(speaker_id), 'speaker.pickle')
+            with open(speaker_path) as fp:
+                samples = cPickle.load(fp)
+            samples = samples[burn_in::lag]
+            for i, sample in enumerate(samples):
+                if i == 0:
+                    avgmeans = sample.means
+                    avgcovars = sample.covars
+                    avgweights = sample.weights
+                else:
+                    avgmeans += sample.means
+                    avgcovars += sample.covars
+                    avgweights += sample.weights
+            speaker_posterior_means[speaker_id] = GMM(avgmeans / len(samples),
+                                                      avgcovars / len(samples),
+                                                      avgweights / len(samples))
+
+        with open(os.path.join(samples_directory, 'ubm.pickle')) as fp:
+            ubm = cPickle.load(fp)
+
+        books = defaultdict(dict)
+
+        num_processed = 0
+        for speaker_id, trials in all_trials.iteritems():
+            for trial in trials:
+                if num_processed % 100 == 0:
+                    print "{0} done".format(float(num_processed) / num_trials)
+                num_processed += 1
+                trial_data = np.load(trial.feature_file)
+                score = speaker_posterior_means[speaker_id].log_likelihood(trial_data, n_jobs) - \
+                        ubm.log_likelihood(trial_data, n_jobs)
+                scores.append(score)
+                truth.append(trial.answer)
+                books[speaker_id][trial.actual_speaker] = score
+
+        scores = np.array(scores)
+        truth = np.array(truth)
+
+        np.save(os.path.join(samples_directory, id + "PosteriorMeanScores.npy"), scores)
+        np.save(os.path.join(samples_directory, id + "PosteriorMeanAnswers.npy"), truth)
+        with open(samples_directory + id + "PosteriorMeanBooks.pickle", 'w') as fp:
+            cPickle.dump(books, fp)
+
+
+    def evaluate_posterior_mean_background(self, all_trials, n_jobs, samples_directory, burn_in, lag, id=''):
+        # just means for now
+        scores = []
+        truth = []
+
+        speaker_posterior_means = {}
+
+        num_trials = 0
+        for speaker_id in all_trials:
+            num_trials += len(all_trials[speaker_id])
+            speaker_path = os.path.join(samples_directory, str(speaker_id), 'speaker.pickle')
+            with open(speaker_path) as fp:
+                samples = cPickle.load(fp)
+            samples = samples[burn_in::lag]
+            for i, sample in enumerate(samples):
+                if i == 0:
+                    avgmeans = sample.means
+                    avgcovars = sample.covars
+                    avgweights = sample.weights
+                else:
+                    avgmeans += sample.means
+                    avgcovars += sample.covars
+                    avgweights += sample.weights
+            speaker_posterior_means[speaker_id] = GMM(avgmeans / len(samples),
+                                                      avgcovars / len(samples),
+                                                      avgweights / len(samples))
+
+        with open(os.path.join(samples_directory, 'background.pickle')) as fp:
+            background_samples = cPickle.load(fp)
+
+        for i, sample in enumerate(background_samples):
+            if i == 0:
+                avgmeans = sample.means
+                avgcovars = sample.covars
+                avgweights = sample.weights
+            else:
+                avgmeans += sample.means
+                avgcovars += sample.covars
+                avgweights += sample.weights
+        background_posterior_mean = GMM(avgmeans / len(samples), avgcovars / len(samples), avgweights / len(samples))
+        books = defaultdict(dict)
+
+        num_processed = 0
+        for speaker_id, trials in all_trials.iteritems():
+            for trial in trials:
+                if num_processed % 100 == 0:
+                    print "{0} done".format(float(num_processed) / num_trials)
+                num_processed += 1
+                trial_data = np.load(trial.feature_file)
+                score = speaker_posterior_means[speaker_id].log_likelihood(trial_data, n_jobs) / trial_data.shape[0] - \
+                        background_posterior_mean.log_likelihood(trial_data, n_jobs) / trial_data.shape[0]
+                scores.append(score)
+                truth.append(trial.answer)
+                books[speaker_id][trial.actual_speaker] = score
+
+        scores = np.array(scores)
+        truth = np.array(truth)
+
+        np.save(os.path.join(samples_directory, id + "PosteriorMeanWBackgroundScores.npy"), scores)
+        np.save(os.path.join(samples_directory, id + "PosteriorMeanWBackgroundAnswers.npy"), truth)
+        with open(samples_directory + id + "PosteriorMeanBooksWBackground.pickle", 'w') as fp:
+            cPickle.dump(books, fp)
+
+
+    def evaluate_bayes_factor_background(self, all_trials, n_jobs, samples_directory, burn_in, lag, id=''):
+        scores = []
+        truth = []
+
+        speaker_samples = {}
+        speaker_numerators = {}
+
+        num_trials = 0
+        for speaker_id in all_trials:
+            num_trials += len(all_trials[speaker_id])
+            speaker_path = os.path.join(samples_directory, str(speaker_id), 'speaker.pickle')
+            with open(speaker_path) as fp:
+                samples = cPickle.load(fp)
+            speaker_samples[speaker_id] = samples[burn_in::lag]
+            print len(speaker_samples[speaker_id])
+
+        with open(os.path.join(samples_directory, 'background.pickle')) as fp:
+            background_samples = cPickle.load(fp)
+            background_samples = background_samples[burn_in::lag]
+
+        books = defaultdict(dict)
+
+        num_processed = 0
+        for speaker_id, trials in all_trials.iteritems():
+            for trial in trials:
+                if num_processed % 100 == 0:
+                    print "{0} done".format(float(num_processed) / num_trials)
+                num_processed += 1
+                trial_data = np.load(trial.feature_file)
+                background_likelihoods = [gmm.log_likelihood(trial_data, n_jobs) / trial_data.shape[0] for gmm in \
+                                         background_samples]
+                background_likelihood  = logsumexp(np.array(background_likelihoods)) - np.log(len(background_samples))
+                claimed_likelihoods = [gmm.log_likelihood(trial_data, n_jobs) / trial_data.shape[0]
+                                       for gmm in speaker_samples[speaker_id]]
+                claimed_likelihood = logsumexp(np.array(claimed_likelihoods)) - np.log(len(speaker_samples[speaker_id]))
+                score = claimed_likelihood - background_likelihood
+                scores.append(score)
+                truth.append(trial.answer)
+                books[speaker_id][trial.actual_speaker] = score
+
+        scores = np.array(scores)
+        truth = np.array(truth)
+
+        np.save(os.path.join(samples_directory, id + "BayesFactorWBackgroundScores.npy"), scores)
+        np.save(os.path.join(samples_directory, id + "BayesFactorWBackgroundAnswers.npy"), truth)
+        with open(samples_directory + id + "BayesFactorWBackgroundBooks.pickle", 'w') as fp:
+            cPickle.dump(books, fp)
