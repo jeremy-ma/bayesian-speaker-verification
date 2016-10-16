@@ -1,58 +1,80 @@
-import gmmmc
+import os
+import cPickle
+from frontend import frontend
+import sys, pdb
+import config
+import time
 import numpy as np
-import bob.bio.gmm
+from scipy.misc import logsumexp
+from gmmmc import GMM
+import sklearn.mixture
+from gmmmc import MarkovChain, AnnealedImportanceSampling
+import logging
+import bob.bio.gmm.algorithm
+from bob.bio.gmm.algorithm import GMM as BobGMM
+import gmmmc
+from gmmmc.priors import MeansUniformPrior, CovarsStaticPrior, WeightsStaticPrior, GMMPrior, MeansGaussianPrior
 from gmmmc.priors import MeansUniformPrior, CovarsStaticPrior, WeightsStaticPrior, GMMPrior, MeansGaussianPrior,\
     DiagCovarsUniformPrior, DiagCovarsWishartPrior, WeightsUniformPrior
 from gmmmc.proposals import GMMBlockMetropolisProposal, GaussianStepCovarProposal, GaussianStepWeightsProposal, GaussianStepMeansProposal
-from gmmmc import MarkovChain, AnnealedImportanceSampling
-import logging
-import matplotlib.pyplot as plt
-import pdb
-import sklearn.mixture.gmm
-from scipy.misc import logsumexp
-import scipy.stats
+from gmmmc import MarkovChain
+import multiprocessing
+import copy
+import bob
+from system.full_system import KLDivergenceMLStartSystem, KLDivergenceMAPStartSystem
+from shutil import copyfile
 from sklearn.metrics import mean_squared_error
 
-stringresults = ''
+def diffexp(x, y):
+    a = np.maximum(x,y)
+    x_ = x - a
+    y_ = y - a
+    return (np.exp(x_) - np.exp(y_)) * np.exp(a)
+
+def mean_squared_error_log(true, test):
+    # accepts log probabilities
+    return np.average(diffexp(true, test) ** 2)
 
 ml_rmse = []
-
 mcmc_rmse = []
+
+ml_rmse2 = []
+mcmc_rmse2 = []
+
 
 counts = []
 
-
-#np.random.seed(3)
-n_mixtures = 4
-n_features = 2
-n_samples = 1000
-
 logging.getLogger().setLevel(logging.INFO)
+n_mixtures, n_runs, n_samples, n_features = 8, 10, 1000, 60
+gender = 'female'
 
-means = np.array([[ 0.1,  0.2],
-                  [ 0.8,  0.9],
-                  [-0.9,  0.5],
-                  [-0.4,  0.1]])
+if gender == 'male':
+    enrolment = config.reddots_part4_enrol_male
+    trials = config.reddots_part4_trial_male
+    background = config.background_data_directory_male
+else:
+    enrolment = config.reddots_part4_enrol_female
+    trials = config.reddots_part4_trial_female
+    background = config.background_data_directory_female
 
-covars = np.array([[ 0.005,  0.005],
-                   [ 0.003,  0.003],
-                   [ 0.007,  0.007],
-                   [ 0.009,  0.009]])
+manager = frontend.DataManager(data_directory=os.path.join(config.data_directory, 'preprocessed'),
+                               enrol_file=enrolment,
+                               trial_file=trials,
+                               background_data_directory=background)
 
-weights = np.array([ 0.4, 0.3, 0.15, 0.15])
+system = KLDivergenceMAPStartSystem(n_mixtures, 2, 2)
 
-truth_gmm = gmmmc.GMM(means, covars, weights)
+system.train_ubm(manager.get_background_data())
 
-
-truth_gmm = gmmmc.GMM(means=np.random.uniform(low=-1, high=1, size=(n_mixtures, n_features)),
-            covariances=np.random.uniform(low=0.001, high=0.01, size=(n_mixtures, n_features)),
-            weights=np.random.dirichlet(np.ones((n_mixtures))))
+truth_gmm = system.ubm
 
 #print truth_gmm.means, truth_gmm.covars, truth_gmm.weights
 # draw samples from the true distribution
+
+stringresults = ''
+
 X = truth_gmm.sample(n_samples)
 for _ in xrange(10):
-
     ML_gmm = sklearn.mixture.GMM(n_mixtures)
     ML_gmm.fit(X)
     ML_gmm = gmmmc.GMM(ML_gmm.means_, covariances=ML_gmm.covars_, weights=ML_gmm.weights_)
@@ -61,7 +83,7 @@ for _ in xrange(10):
 
     prior = GMMPrior(MeansUniformPrior(-10,10,n_mixtures,n_features),
                      #MeansUniformPrior(-1,1,2,1),
-                     DiagCovarsUniformPrior(0.00001, 1.0, n_mixtures, n_features),
+                     DiagCovarsUniformPrior(0.00001, 10.0, n_mixtures, n_features),
                      WeightsUniformPrior(n_mixtures))
 
     proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.0001, 0.001, 0.005]),
@@ -71,7 +93,7 @@ for _ in xrange(10):
     #ais = AnnealedImportanceSampling(proposal, priors, )
     mcmc = MarkovChain(proposal, prior, ML_gmm)
 
-    mcmc_samples = mcmc.sample(X, 1000, -1)
+    mcmc_samples = mcmc.sample(X, 10000, -1)
 
     print proposal.propose_mean.get_acceptance()
     print proposal.propose_covars.get_acceptance()
@@ -87,8 +109,8 @@ for _ in xrange(10):
 
     for sample in X_test:
         sample = np.array([sample])
-        ll_mcmc.append(logsumexp([gmm.log_likelihood(sample, -1) for gmm in mcmc_samples]) \
-                       - np.log(len(mcmc_samples)))
+        ll_mcmc.append(logsumexp([gmm.log_likelihood(sample, -1) for gmm in mcmc_samples[::100]]) \
+                       - np.log(len(mcmc_samples[::100])))
         ll_ml.append(ML_gmm.log_likelihood(sample, -1))
         ll_true.append(truth_gmm.log_likelihood(sample, -1))
         #print ll_mcmc, ll_ml, ll_true
@@ -111,10 +133,10 @@ for _ in xrange(10):
 
     ml_rmse.append(mean_squared_error(l_true,l_ml)**0.5)
     mcmc_rmse.append(mean_squared_error(l_true,l_mcmc)**0.5)
+
     counts.append(count)
 
     print float(count) / float(len(X_test))
-
 
 print stringresults
 

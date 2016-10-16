@@ -29,33 +29,30 @@ n_samples = 1000
 
 logging.getLogger().setLevel(logging.INFO)
 
-means = np.array([[ 0.1,  0.2],
-                  [ 0.8,  0.9],
-                  [-0.9,  0.5],
-                  [-0.4,  0.1]])
-
-covars = np.array([[ 0.005,  0.005],
-                   [ 0.003,  0.003],
-                   [ 0.007,  0.007],
-                   [ 0.009,  0.009]])
-
-weights = np.array([ 0.4, 0.3, 0.15, 0.15])
-
-truth_gmm = gmmmc.GMM(means, covars, weights)
-
 
 truth_gmm = gmmmc.GMM(means=np.random.uniform(low=-1, high=1, size=(n_mixtures, n_features)),
+            covariances=np.random.uniform(low=0.001, high=0.01, size=(n_mixtures, n_features)),
+            weights=np.random.dirichlet(np.ones((n_mixtures))))
+
+truth2_gmm = gmmmc.GMM(means=np.random.uniform(low=-1, high=1, size=(n_mixtures, n_features)),
             covariances=np.random.uniform(low=0.001, high=0.01, size=(n_mixtures, n_features)),
             weights=np.random.dirichlet(np.ones((n_mixtures))))
 
 #print truth_gmm.means, truth_gmm.covars, truth_gmm.weights
 # draw samples from the true distribution
 X = truth_gmm.sample(n_samples)
+X_2 = truth2_gmm.sample(n_samples)
+
 for _ in xrange(10):
 
-    ML_gmm = sklearn.mixture.GMM(n_mixtures)
-    ML_gmm.fit(X)
-    ML_gmm = gmmmc.GMM(ML_gmm.means_, covariances=ML_gmm.covars_, weights=ML_gmm.weights_)
+    temp = sklearn.mixture.GMM(n_mixtures)
+    temp.fit(X)
+    ML_gmm = gmmmc.GMM(temp.means_, covariances=temp.covars_, weights=temp.weights_)
+    temp = sklearn.mixture.GMM(n_mixtures)
+    temp.fit(X_2)
+    ML_gmm2 = gmmmc.GMM(temp.means_, covariances=temp.covars_, weights=temp.weights_)
+
+
     print "##############"
     print ML_gmm.means, ML_gmm.covars, ML_gmm.weights
 
@@ -72,10 +69,13 @@ for _ in xrange(10):
     mcmc = MarkovChain(proposal, prior, ML_gmm)
 
     mcmc_samples = mcmc.sample(X, 1000, -1)
+    mcmc_samples2 = mcmc.sample(X_2, 1000, -1)
 
     print proposal.propose_mean.get_acceptance()
     print proposal.propose_covars.get_acceptance()
     print proposal.propose_weights.get_acceptance()
+
+    print "#####################################"
 
     X_test = truth_gmm.sample(1000)
 
@@ -87,10 +87,14 @@ for _ in xrange(10):
 
     for sample in X_test:
         sample = np.array([sample])
-        ll_mcmc.append(logsumexp([gmm.log_likelihood(sample, -1) for gmm in mcmc_samples]) \
-                       - np.log(len(mcmc_samples)))
-        ll_ml.append(ML_gmm.log_likelihood(sample, -1))
-        ll_true.append(truth_gmm.log_likelihood(sample, -1))
+
+        ratio_mcmc = logsumexp([gmm.log_likelihood(sample, -1) for gmm in mcmc_samples]) \
+                       - np.log(len(mcmc_samples)) - \
+                     logsumexp([gmm.log_likelihood(sample, -1) for gmm in mcmc_samples2]) \
+                     - np.log(len(mcmc_samples))
+        ll_mcmc.append(ratio_mcmc)
+        ll_ml.append(ML_gmm.log_likelihood(sample, -1) - ML_gmm2.log_likelihood(sample, -1))
+        ll_true.append(truth_gmm.log_likelihood(sample, -1) - truth2_gmm.log_likelihood(sample))
         #print ll_mcmc, ll_ml, ll_true
 
     ll_true = np.array(ll_true)
@@ -100,7 +104,6 @@ for _ in xrange(10):
     l_true = np.exp(ll_true)
     l_mcmc = np.exp(ll_mcmc)
     l_ml = np.exp(ll_ml)
-
 
     count = np.sum(np.abs(l_true - l_mcmc) < np.abs(l_true - l_ml))
 
