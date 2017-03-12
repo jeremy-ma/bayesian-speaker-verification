@@ -51,9 +51,9 @@ class LeapFrogMeansProposal(Proposal):
         super(LeapFrogMeansProposal, self).__init__()
         self.step_size = step_size
         self.num_steps = num_steps
-        self.count_accepted = 0
-        self.count_illegal =  0
-        self.count_proposed = 0
+        self.count_accepted = 0.
+        self.count_illegal =  0.
+        self.count_proposed = 0.
 
     def propose(self, X, gmm, target, n_jobs=1):
         """
@@ -86,7 +86,7 @@ class LeapFrogMeansProposal(Proposal):
 
         for i in xrange(self.num_steps):
             for j in xrange(num_mixtures):
-                self.count_proposed += 1
+                self.count_proposed += 1.
                 # leapfrog algorithm
                 derivative = means_derivative(X, updated_gmm, means_prior)
                 proposed_momentum = np.array(momentum)
@@ -99,11 +99,11 @@ class LeapFrogMeansProposal(Proposal):
 
                 derivative = means_derivative(X, proposed_gmm, means_prior)
                 proposed_momentum[j] = momentum[j] - self.step_size / 2 * derivative[j]
-                acceptance = proposed_gmm.log_likelihood(X,n_jobs=1) - updated_gmm.log_likelihood(X, n_jobs=1) + \
+                acceptance = proposed_gmm.log_likelihood(X,n_jobs=1) + target.prior.log_prob(proposed_gmm) - \
+                             updated_gmm.log_likelihood(X, n_jobs=1) - target.prior.log_prob(updated_gmm) +\
                             np.dot(momentum.ravel(), proposed_momentum.ravel()) / 2
-
                 if acceptance > 0 or acceptance > np.log(np.random.uniform()):
-                    self.count_accepted += 1
+                    self.count_accepted += 1.
                     updated_gmm = proposed_gmm
                     momentum = proposed_momentum
 
