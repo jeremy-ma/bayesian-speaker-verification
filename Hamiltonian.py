@@ -78,8 +78,8 @@ class LeapFrogMeansProposal(Proposal):
         num_mixtures, dimension = gmm.means.shape
 
         #sample new momentums for each mixture
-        momentum = [multivariate_normal(np.zeros(dimension), np.diag(np.ones((dimension,)))).rvs()
-                    for _ in xrange(num_mixtures)]
+        momentum = np.array([multivariate_normal(np.zeros(dimension), np.diag(np.ones((dimension,)))).rvs()
+                    for _ in xrange(num_mixtures)])
         updated_gmm = GMM(gmm.means, gmm.covars, gmm.weights)
 
         means_prior = target.prior.means_prior
@@ -99,9 +99,8 @@ class LeapFrogMeansProposal(Proposal):
 
                 derivative = means_derivative(X, proposed_gmm, means_prior)
                 proposed_momentum[j] = momentum[j] - self.step_size / 2 * derivative[j]
-
                 acceptance = proposed_gmm.log_likelihood(X,n_jobs=1) - updated_gmm.log_likelihood(X, n_jobs=1) + \
-                            np.dot(momentum, proposed_momentum) / 2
+                            np.dot(momentum.ravel(), proposed_momentum.ravel()) / 2
 
                 if acceptance > 0 or acceptance > np.log(np.random.uniform()):
                     self.count_accepted += 1
