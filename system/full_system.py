@@ -309,7 +309,7 @@ class KLDivergenceMAPStartSystem(object):
                        np.array(self.model.ubm.weights))
         self.model.enroll_trainer = bob.learn.em.MAP_GMMTrainer(self.model.ubm,
                                                                 relevance_factor=self.model.relevance_factor,
-                                                                update_means=True, update_variances=False)
+                                                                update_means=True, update_variances=False, update_weights=False)
 
     def sample_background(self, background_features, n_jobs, destination_directory):
         path = os.path.join(destination_directory, 'background.pickle')
@@ -620,9 +620,8 @@ class KLDivergenceMAPStartSystem(object):
                 avgmeans += sample.means
                 avgcovars += sample.covars
                 avgweights += sample.weights
-        background_posterior_mean = GMM(avgmeans / len(samples), avgcovars / len(samples), avgweights / len(samples))
+        background_posterior_mean = GMM(avgmeans / len(background_samples), avgcovars / len(background_samples), avgweights / len(background_samples))
         books = defaultdict(dict)
-
         num_processed = 0
         for speaker_id, trials in all_trials.iteritems():
             for trial in trials:
