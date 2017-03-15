@@ -21,7 +21,7 @@ def means_derivative(X, gmm, means_prior):
     logprob = logsumexp(lpr)
 
     derivative_weights = np.exp(lpr - logprob)
-    derivative = -np.sum(derivative_weights.T[:,:,np.newaxis] * (X - gmm.means[:,np.newaxis])/gmm.covars[:,np.newaxis], axis=1)
+    derivative = np.sum(derivative_weights.T[:,:,np.newaxis] * (X - gmm.means[:,np.newaxis])/gmm.covars[:,np.newaxis], axis=1)
     # add the infludence of the prior
     prior_derivative = (gmm.means - means_prior.means) / means_prior.covars
 
@@ -32,7 +32,7 @@ def means_derivative(X, gmm, means_prior):
     #    for j in xrange(n_samples):
     #        derivative[i] += derivative_weights[j][i] * (X[j] - means[i]) / covars[i]
 
-    return derivative
+    return -derivative
 
 class LeapFrogMeansProposal(Proposal):
     """Gaussian Proposal distribution for means of a GMM"""
@@ -78,34 +78,39 @@ class LeapFrogMeansProposal(Proposal):
         num_mixtures, dimension = gmm.means.shape
 
         #sample new momentums for each mixture
-        momentum = np.array([multivariate_normal(np.zeros(dimension), np.diag(np.ones((dimension,)))).rvs()
-                    for _ in xrange(num_mixtures)])
+        if dimension == 1:
+            updated_momentum = np.array([[multivariate_normal(np.zeros(dimension), np.diag(np.ones((dimension,)))).rvs()]
+                        for _ in xrange(num_mixtures)])
+        else:
+            updated_momentum = np.array([multivariate_normal(np.zeros(dimension), np.diag(np.ones((dimension,)))).rvs()
+                 for _ in xrange(num_mixtures)])
         updated_gmm = GMM(gmm.means, gmm.covars, gmm.weights)
 
         means_prior = target.prior.means_prior
 
+        proposed_momentum = np.array(updated_momentum)
+        proposed_means = np.array(updated_gmm.means)
+        proposed_gmm = GMM(proposed_means, np.array(gmm.covars), np.array(gmm.weights))
+
         for i in xrange(self.num_steps):
-            for j in xrange(num_mixtures):
-                self.count_proposed += 1.
+            #for j in xrange(num_mixtures):
                 # leapfrog algorithm
-                derivative = means_derivative(X, updated_gmm, means_prior)
-                proposed_momentum = np.array(momentum)
-                proposed_means = np.array(updated_gmm.means)
+            derivative = means_derivative(X, proposed_gmm, means_prior)
+            proposed_momentum = proposed_momentum - self.step_size / 2 * derivative
+            proposed_means = proposed_means + self.step_size * proposed_momentum
+            proposed_gmm = GMM(proposed_means, np.array(gmm.covars), np.array(gmm.weights))
+            derivative = means_derivative(X, proposed_gmm, means_prior)
+            proposed_momentum = proposed_momentum - self.step_size / 2 * derivative
 
-                proposed_momentum[j] = momentum[j] - self.step_size / 2 * derivative[j]
-                proposed_means[j] = updated_gmm.means[j] + self.step_size * momentum[j]
+        acceptance = proposed_gmm.log_likelihood(X, n_jobs=1) + target.prior.means_prior.log_prob(proposed_gmm.means) - \
+                     updated_gmm.log_likelihood(X, n_jobs=1) - target.prior.means_prior.log_prob(updated_gmm.means) + \
+                     np.dot(updated_momentum.ravel(), proposed_momentum.ravel()) / 2
 
-                proposed_gmm = GMM(proposed_means, np.array(gmm.covars), np.array(gmm.weights))
+        self.count_proposed += 1.
 
-                derivative = means_derivative(X, proposed_gmm, means_prior)
-                proposed_momentum[j] = momentum[j] - self.step_size / 2 * derivative[j]
-                acceptance = proposed_gmm.log_likelihood(X,n_jobs=1) + target.prior.log_prob(proposed_gmm) - \
-                             updated_gmm.log_likelihood(X, n_jobs=1) - target.prior.log_prob(updated_gmm) +\
-                            np.dot(momentum.ravel(), proposed_momentum.ravel()) / 2
-                if acceptance > 0 or acceptance > np.log(np.random.uniform()):
-                    self.count_accepted += 1.
-                    updated_gmm = proposed_gmm
-                    momentum = proposed_momentum
+        if acceptance > 0 or acceptance > np.log(np.random.uniform()):
+            self.count_accepted += 1.
+            updated_gmm = proposed_gmm
 
         return updated_gmm
 
